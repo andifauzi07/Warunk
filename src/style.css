@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* Status colors (indikator detektor selisih kas) */
+  --color-status-aman: #16a34a;
+  --color-status-waspada: #ca8a04;
+  --color-status-kritis: #dc2626;
+}
+
+/* Mobile-first base */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-zinc-100 text-zinc-900 antialiased;
+  min-height: 100dvh;
+  font-size: 16px; /* minimal 16px sesuai PRD §6.1 */
+  font-family: var(--font-sans);
+}
+
+/* Elemen interaktif minimal 48px (PRD §6.1 thumb zone) */
+button,
+[role='button'],
+input,
+select {
+  @apply cursor-pointer;
+  min-height: 48px;
+}
+
+button:disabled {
+  @apply cursor-not-allowed opacity-50;
+}
+
+/* Number display besar untuk hasil kalkulasi (PRD §6.1) */
+.angka-besar {
+  @apply font-bold tabular-nums;
+  font-size: clamp(24px, 7vw, 32px);
+  line-height: 1.1;
+}

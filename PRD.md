@@ -1,282 +1,341 @@
-# Spesifikasi Fitur Aplikasi Manajemen Warung Makan
+# Product Requirement Document (PRD)
 
-Pencatatan penjualan, manajemen stok & bahan baku, serta kalkulasi HPP dan keuntungan otomatis.
+## Sistem Rekonsiliasi Mundur — Manajemen Profit Warung Nasi Campur Tradisional
 
-## Referensi Masalah
-
-| Kode   | Masalah                                                                                                      |
-| ------ | ------------------------------------------------------------------------------------------------------------ |
-| **M1** | Tidak pernah tahu keuntungan bersih; yang diketahui hanya pendapatan kotor di akhir waktu penjualan          |
-| **M2** | Tidak tahu modal yang harus dikeluarkan untuk jumlah porsi yang akan dijual pada hari itu                    |
-| **M3** | Tidak tahu keuntungan yang didapat dari hasil kalkulasi modal dan pendapatan                                 |
-| **M4** | Tidak tahu HPP yang harus ditentukan agar keuntungan maksimal                                                |
-| **M5** | Sulit melakukan kalkulasi rekap per periode (harian, bulanan, tahunan) karena masih manual dengan kalkulator |
-
-Setiap fitur di bawah mencantumkan kode masalah yang dijawab. **"Menjawab langsung"** = fitur ini secara langsung menyelesaikan masalah tsb. **"Mendukung"** = fitur ini fondasi/data pendukung agar fitur lain bisa menjawab masalah tsb.
+| Metadata      | Keterangan                                          |
+| ------------- | --------------------------------------------------- |
+| Nama Produk   | _(working title)_ WarungKas — Rekonsiliasi Mundur   |
+| Versi Dokumen | 1.0                                                 |
+| Tipe Proyek   | Personal Project / Impact-Driven untuk UMKM Kuliner |
+| Platform      | Mobile-First Progressive Web App (PWA)              |
+| Status        | Draft — Siap Pakai untuk Development                |
 
 ---
 
-## Modul 1 — Manajemen Bahan Baku & Stok
+## 1. Product Overview & Objectives
 
-_Fondasi data harga dan ketersediaan bahan baku untuk seluruh kalkulasi modal (M2) dan HPP (M4)._
+### 1.1 Deskripsi Produk
 
-### 1.1 Data Master Bahan Baku
+WarungKas adalah aplikasi web mobile-first (PWA) yang membantu pemilik warung nasi campur tradisional menghitung **keuntungan bersih harian secara otomatis**, tanpa mengganggu kecepatan pelayanan di jam sibuk. Berbeda dengan POS konvensional yang mencatat _setiap transaksi_ di kasir (dan terbukti gagal karena memperlambat antrean saat jam ramai), aplikasi ini menggunakan pendekatan **Backward Reconciliation (Rekonsiliasi Mundur)**: sistem tidak pernah mencatat apa yang dijual, melainkan menghitung apa yang **habis dikonsumsi** dengan membandingkan stok awal (pagi) dan stok akhir (malam) dari setiap jenis lauk/masakan.
 
-**Mendukung:** M2, M4 (fondasi data)
+Prinsip inti: _"Kita tidak perlu tahu siapa membeli apa. Kita cukup tahu apa yang hilang dari stok, dan itu adalah apa yang terjual."_
 
-- CRUD (tambah/lihat/ubah/hapus) bahan baku dengan field: nama bahan baku, satuan ukur (kg, gram, liter, ml, pcs, ikat, dll.), harga beli per satuan terbaru, jumlah stok saat ini, batas stok minimum
-- Field opsional: kategori bahan baku, nama supplier
-- Satuan pada tiap bahan baku wajib konsisten dengan satuan yang dipakai di resep (Modul 2) dan pencatatan pembelian (1.2)
+Beban input data digeser sepenuhnya ke waktu senggang pemilik warung — pagi sebelum buka dan malam setelah tutup — sehingga jam operasional sibuk (siang) berjalan 100% seperti biasa tanpa aplikasi.
 
-### 1.2 Pencatatan Pembelian Bahan Baku (Stok Masuk)
+### 1.2 Masalah Utama yang Diselesaikan
 
-**Mendukung:** M2, M4 (akurasi harga terkini)
+- Pemilik warung **tidak pernah tahu profit bersih harian** secara akurat karena:
+  - HPP (Harga Pokok Penjualan) bahan baku bersifat dinamis/fluktuatif per hari (harga pasar berubah-ubah).
+  - Kombinasi pesanan pelanggan sangat acak (nasi campur = kombinasi bebas dari banyak jenis lauk), sehingga mustahil dicatat manual per transaksi saat ramai.
+  - Sistem POS konvensional gagal diterapkan karena menambah waktu antre di kasir pada jam sibuk — sudah dibuktikan tidak layak (validated failure).
+- Tidak ada mekanisme untuk mendeteksi **kebocoran uang** (selisih antara uang kas fisik dengan uang yang seharusnya ada berdasarkan hasil rekonsiliasi stok).
+- Tidak ada pencatatan sistematis untuk **stok basi/rusak**, sehingga kerugian riil tidak pernah terukur dan sering "hilang" begitu saja dari perhitungan.
 
-- Input: bahan baku yang dibeli, jumlah, harga beli (total atau per satuan), tanggal pembelian
-- Sistem otomatis menambah stok bahan baku terkait dan memperbarui "harga beli per satuan terbaru" pada 1.1
-- Opsional: kalkulasi harga rata-rata tertimbang (weighted average) bila harga bahan baku sering berubah, agar HPP di Modul 2 tidak bias ke satu harga pembelian terakhir saja
+### 1.3 Metrik Kesuksesan Produk (Success Metrics)
 
-### 1.3 Pemantauan Stok & Notifikasi Stok Menipis
-
-**Mendukung:** M2 (kepastian ketersediaan sebelum produksi)
-
-- Status tiap bahan baku ditampilkan sebagai Aman / Menipis / Habis, dibandingkan terhadap batas stok minimum (1.1)
-- Notifikasi otomatis saat stok bahan baku mencapai atau di bawah batas minimum
-
-### 1.4 Pengurangan Stok Otomatis
-
-**Mendukung:** M2, M5 (data stok & histori selalu akurat tanpa input manual berulang)
-
-- Saat transaksi penjualan tersimpan (Modul 4), sistem otomatis mengurangi stok tiap bahan baku sesuai resep (Modul 2) dikali jumlah porsi terjual
-
-### 1.5 Kartu Stok (Riwayat Mutasi)
-
-**Mendukung:** M2 (transparansi pergerakan stok)
-
-- Log seluruh mutasi stok tiap bahan baku: masuk (pembelian), keluar (terpakai penjualan), penyesuaian — masing-masing dengan tanggal, jumlah, dan keterangan
-
-### 1.6 Stok Opname (Penyesuaian Manual)
-
-**Mendukung:** M2 (akurasi stok agar kalkulasi kecukupan modal tidak salah)
-
-- Form koreksi jumlah stok sistem saat berbeda dari stok fisik (misal bahan baku rusak/susut), dengan kolom alasan penyesuaian
+| Kategori        | Metrik                                                  | Target                                                  |
+| --------------- | ------------------------------------------------------- | ------------------------------------------------------- |
+| Adopsi Pengguna | Konsistensi input harian (pagi + malam)                 | ≥ 90% hari operasional dalam sebulan terisi lengkap     |
+| Adopsi Pengguna | Waktu pengisian modul malam                             | ≤ 5 menit per sesi                                      |
+| Akurasi Bisnis  | Selisih kas (uang fisik vs uang hasil rekonsiliasi)     | Termonitor tiap hari, tren mengecil dari waktu ke waktu |
+| Akurasi Bisnis  | Akurasi HPP campuran (weighted average)                 | Deviasi < 5% dibanding perhitungan manual akuntan       |
+| Dampak (Impact) | Pemilik warung dapat menjawab "untung berapa hari ini?" | Dalam < 10 detik setelah input malam selesai            |
+| Retensi         | Pemakaian aktif berkelanjutan                           | Digunakan tanpa jeda > 3 hari berturut-turut            |
 
 ---
 
-## Modul 2 — Manajemen Resep & Kalkulasi HPP
+## 2. User Persona & Workflow
 
-_Menjawab langsung kebutuhan mengetahui HPP ideal (M4), sekaligus menjadi dasar kalkulasi modal (M2) dan keuntungan (M1, M3)._
+### 2.1 Persona: Pemilik Warung Nasi Campur
 
-### 2.1 Data Master Menu
+**Nama Persona:** Bu Sri, 48 tahun, pemilik warung nasi campur tradisional.
 
-**Mendukung:** M4 (fondasi)
+- **Latar belakang:** Menjalankan warung 6 hari/minggu, tidak familiar dengan aplikasi kompleks, terbiasa dengan HP Android sederhana untuk WhatsApp dan sosial media.
+- **Kondisi kerja:** Sangat sibuk pada jam makan siang (11.00–14.00) dan makan malam ringan (17.00–19.00); relatif senggang pada pagi hari sebelum buka (05.00–08.00) dan malam setelah tutup (20.00–21.00).
+- **Kebutuhan utama:** UI sangat sederhana, minim ketik, berbasis tap/pilih angka, tidak butuh pelatihan panjang.
+- **Ketakutan utama:** Takut aplikasi ribet, takut proses tambahan memperlambat pelayanan, takut data hilang/salah input dan tidak bisa dikoreksi.
+- **Tujuan akhir:** Ingin tahu secara pasti "hari ini untung berapa" tanpa harus menghitung manual dengan kalkulator dan buku catatan setiap malam.
 
-- CRUD menu/produk: nama menu, kategori (opsional), harga jual saat ini
+### 2.2 Alur Kerja Pengguna (3 Fase)
 
-### 2.2 Definisi Resep (Bill of Materials)
+#### FASE 1 — PAGI (Sebelum Buka, ± 05.00–08.00)
 
-**Mendukung:** M4 (fondasi)
+**Tujuan:** Menetapkan baseline stok hari ini.
 
-- Setiap menu dipetakan ke satu/lebih bahan baku beserta takaran pemakaian per satu porsi (contoh: 1 porsi "Nasi Goreng" = 200 gr beras + 1 butir telur + 50 gr ayam)
-- Satu bahan baku bisa dipakai di banyak resep menu; satu menu bisa memakai banyak bahan baku
+1. Pemilik membuka aplikasi, memilih menu **"Input Stok Pagi"**.
+2. Sistem otomatis menampilkan **carry-over stock** (sisa lauk kemarin malam yang masih layak jual) sebagai baris awal per item.
+3. Pemilik mengecek fisik lauk sisa kemarin:
+   - Jika masih layak → dikonfirmasi masuk sebagai stok aktif hari ini (carry-over).
+   - Jika basi/rusak → dicatat di **"Porsi Basi Pagi"**, otomatis dikeluarkan dari stok aktif dan dicatat sebagai kerugian (loss) langsung.
+4. Pemilik menambahkan jumlah porsi masakan baru yang dimasak hari ini per jenis lauk, beserta estimasi total modal bahan baku hari ini (untuk kalkulasi HPP fluktuatif).
+5. Sistem otomatis menghitung **Total Stok Aktif Awal** per lauk = carry-over layak jual + porsi baru.
 
-### 2.3 Kalkulasi HPP Otomatis per Porsi
+#### FASE 2 — SIANG (Jam Operasional, ± 08.00–20.00)
 
-**Menjawab langsung:** M4
+**Tujuan:** Warung beroperasi normal 100% tanpa aplikasi.
 
-- Formula: `HPP Bahan Baku/Porsi = Σ (takaran bahan baku pada resep × harga beli bahan baku per satuan terbaru)`
-- HPP tiap menu otomatis ter-update setiap kali harga bahan baku berubah (dari 1.2), sehingga selalu mencerminkan HPP terkini
+- Tidak ada input apa pun ke sistem.
+- Pemilik/karyawan melayani pembeli seperti biasa, tanpa mencatat transaksi apa pun.
+- Uang hasil penjualan dikumpulkan di laci kasir seperti biasa.
 
-### 2.4 Komponen Biaya Operasional per Porsi (Opsional)
+#### FASE 3 — MALAM (Setelah Tutup, ± 20.00–21.00)
 
-**Menjawab langsung:** M4 (akurasi HPP)
+**Tujuan:** Rekonsiliasi mundur untuk menghitung apa yang terjual dan profit bersih.
 
-- Pengguna dapat menambahkan biaya lain di luar bahan baku yang dialokasikan per porsi (contoh: gas, kemasan, tenaga kerja)
-- Formula: `HPP Total/Porsi = HPP Bahan Baku/Porsi + Biaya Operasional/Porsi`
-
-### 2.5 Rekomendasi Harga Jual Berdasarkan Target Margin
-
-**Menjawab langsung:** M4
-
-- Pengguna memasukkan target margin keuntungan (%) per menu atau secara global
-- Formula: `Harga Jual Rekomendasi = HPP Total/Porsi ÷ (1 − target margin%)`
-- Sistem menampilkan perbandingan: harga jual saat ini vs harga jual rekomendasi vs margin aktual dari harga saat ini, dengan `Margin Aktual = (Harga Jual − HPP Total/Porsi) ÷ Harga Jual × 100%`
-
-### 2.6 Simulasi Skenario (What-If) HPP & Harga Jual
-
-**Menjawab langsung:** M4
-
-- Pengguna dapat mensimulasikan perubahan harga bahan baku atau target margin secara sementara (tanpa mengubah data asli), dan langsung melihat dampaknya terhadap HPP, harga jual ideal, serta keuntungan per porsi
-
-### 2.7 Peringatan Harga Jual di Bawah HPP
-
-**Menjawab langsung:** M4 (mencegah kerugian akibat HPP tidak diketahui)
-
-- Notifikasi otomatis apabila harga jual yang ditetapkan pada menu (2.1) berada di bawah HPP Total/Porsi (2.4) atau di bawah margin minimum yang ditentukan pengguna
+1. Pemilik membuka menu **"Input Malam"**.
+2. Untuk setiap jenis lauk, pemilik menghitung sisa fisik (stok opname) dan menginput:
+   - Jumlah porsi sisa yang **masih layak jual besok (carry-over)**.
+   - Jumlah porsi yang **rusak/basi hari ini** (loss).
+3. Sistem otomatis menghitung **Porsi Dikonsumsi** = Stok Aktif Awal − Sisa Layak Jual − Porsi Rusak.
+4. Pemilik menginput **Total Uang di Laci Kasir** (satu angka saja, hasil hitung uang fisik).
+5. Sistem menampilkan ringkasan: Total HPP Nyata, Estimasi Pendapatan (berdasarkan harga jual per porsi), Keuntungan Bersih, dan **Selisih Kas** (deteksi potensi kebocoran).
+6. Data tersimpan, dashboard otomatis ter-update.
 
 ---
 
-## Modul 3 — Perencanaan Produksi & Kebutuhan Modal Harian
+## 3. Logika Matematika & Inventory Core System
 
-_Menjawab langsung kebutuhan mengetahui modal untuk rencana penjualan harian (M2)._
+### 3.1 Alur Kalkulasi Inti
 
-### 3.1 Input Rencana Penjualan Harian
+```
+[Stok Aktif Awal] = [Carry-Over Layak Jual (dari kemarin)] + [Porsi Masak Baru Hari Ini]
 
-**Menjawab langsung:** M2
+[Porsi Dikonsumsi] = [Stok Aktif Awal] − [Sisa Layak Jual Malam Ini] − [Porsi Rusak Malam Ini]
 
-- Form input sebelum mulai berjualan: jumlah porsi yang direncanakan untuk dijual per menu, pada tanggal tersebut
+[Total HPP Nyata] = Σ ( [Porsi Dikonsumsi per Lauk] × [HPP per Porsi (Weighted Average)] )
 
-### 3.2 Kalkulasi Otomatis Total Modal yang Dibutuhkan
+[Total Pendapatan Estimasi] = Σ ( [Porsi Dikonsumsi per Lauk] × [Harga Jual per Porsi] )
 
-**Menjawab langsung:** M2
+[Keuntungan Bersih Harian] = [Total Pendapatan Estimasi] − [Total HPP Nyata] − [Total Nilai Kerugian (Basi/Rusak)]
+```
 
-- Formula: `Total Modal Harian = Σ (rencana porsi per menu × HPP Total/Porsi menu tsb)`, dijumlahkan untuk seluruh menu yang direncanakan
-- Ditampilkan sebagai satu angka total sebelum transaksi penjualan pertama terjadi
+### 3.2 Penanganan Porsi Rusak/Basi
 
-### 3.3 Rincian Kebutuhan Bahan Baku Harian
+Ada **dua titik pencatatan kerugian** yang harus dibedakan secara eksplisit karena berbeda waktu kejadian dan konsekuensi datanya:
 
-**Mendukung:** M2 (rincian pendukung angka modal)
+| Titik Pencatatan      | Kapan Terjadi                                                         | Efek pada Sistem                                                                                                                                       |
+| --------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Porsi Basi Pagi**   | Ditemukan sebelum warung buka, dari sisa carry-over kemarin           | Nilai modal (berdasarkan HPP carry-over) langsung dicatat sebagai _Loss_, dan **tidak pernah masuk ke Stok Aktif Awal hari ini**                       |
+| **Porsi Rusak Malam** | Ditemukan saat stok opname malam, dari total stok aktif hari berjalan | Nilai modal (berdasarkan HPP weighted average hari itu) dicatat sebagai _Loss_, dikeluarkan dari perhitungan Porsi Dikonsumsi (bukan dianggap terjual) |
 
-- Sistem menjabarkan total kebutuhan tiap bahan baku: `Kebutuhan Bahan Baku X = Σ (rencana porsi menu × takaran bahan baku X pada resep menu tsb)`, digabung lintas semua menu yang direncanakan
+Kedua nilai loss ini dijumlahkan menjadi **Total Nilai Kerugian** dan mengurangi keuntungan bersih harian secara langsung — bukan disembunyikan atau diabaikan.
 
-### 3.4 Cek Kecukupan Stok terhadap Rencana Produksi
+### 3.3 Skenario Carry-Over Stock
 
-**Mendukung:** M2 (validasi rencana terhadap stok riil)
+Lauk yang tidak habis terjual namun masih layak konsumsi dapat "dibawa" ke hari berikutnya dan dijual kembali. Sistem wajib:
 
-- Sistem membandingkan stok bahan baku tersedia (Modul 1) dengan hasil 3.3, menandai bahan baku yang stoknya tidak cukup
-- Menampilkan estimasi jumlah porsi maksimal yang bisa diproduksi dari stok saat ini, per menu
+- Menyimpan jumlah porsi carry-over per lauk beserta **HPP asalnya** (HPP hari kemarin, bukan HPP hari ini).
+- Menyatukan carry-over dengan porsi baru dalam satu kolam stok aktif (namun HPP-nya tetap dihitung terpisah lalu digabung via weighted average — lihat 3.4).
+- Mencegah carry-over "menumpuk" tanpa batas: jika porsi carry-over ditemukan basi di pagi hari berikutnya, otomatis dicatat sebagai Porsi Basi Pagi (lihat 3.2) dan modalnya keluar dari sirkulasi.
 
-### 3.5 Proyeksi Keuntungan dari Rencana Penjualan
+### 3.4 Weighted Average Cost (HPP Campuran)
 
-**Menjawab langsung:** M2, M3
+Karena carry-over punya HPP dari hari kemarin dan masakan baru punya HPP hari ini (fluktuatif), sistem **wajib** menghitung HPP gabungan per porsi menggunakan metode rata-rata tertimbang:
 
-- Formula: `Proyeksi Pendapatan = Σ (rencana porsi × harga jual)`, lalu `Proyeksi Keuntungan = Proyeksi Pendapatan − Total Modal Harian (3.2)`
-- Memberi gambaran keuntungan potensial sebelum berjualan, sebagai pembanding terhadap hasil aktual (Modul 5)
+```
+HPP Gabungan per Porsi =
+    ( [Jumlah Porsi Carry-Over] × [HPP per Porsi Carry-Over, dari data kemarin] )
+  + ( [Jumlah Porsi Baru] × [HPP per Porsi Baru, dari total modal ÷ jumlah porsi baru hari ini] )
+  ÷
+    ( [Jumlah Porsi Carry-Over] + [Jumlah Porsi Baru] )
+```
 
----
+**Contoh perhitungan:**
 
-## Modul 4 — Pencatatan Transaksi Penjualan
+- Carry-over: 5 porsi ayam goreng sisa kemarin, HPP kemarin Rp 6.000/porsi → subtotal modal Rp 30.000
+- Baru: 20 porsi ayam goreng dimasak hari ini, total modal bahan baku Rp 140.000 → HPP baru Rp 7.000/porsi → subtotal modal Rp 140.000
+- Total porsi aktif = 25, Total modal = Rp 170.000
+- **HPP Gabungan = Rp 170.000 ÷ 25 = Rp 6.800/porsi**
 
-_Menjadi sumber data utama agar kalkulasi keuntungan (M1, M3) dan laporan periode (M5) bisa otomatis, bukan manual._
+HPP gabungan inilah yang dipakai untuk menghitung Total HPP Nyata dari Porsi Dikonsumsi pada hari tersebut (poin 3.1).
 
-### 4.1 Input Transaksi Penjualan
+### 3.5 Aturan Penting Tambahan
 
-**Mendukung:** M1, M3, M5 (sumber data utama)
-
-- Form input: pilih menu, jumlah porsi terjual, harga jual (default dari 2.1, dapat diubah manual per transaksi bila ada potongan/nego harga)
-- Tanggal & waktu transaksi tercatat otomatis oleh sistem
-
-### 4.2 Transaksi Multi-Item dalam Satu Nota
-
-**Mendukung:** M1, M5
-
-- Satu transaksi dapat memuat beberapa menu berbeda sekaligus, sesuai kondisi satu pelanggan memesan lebih dari satu menu
-
-### 4.3 Kalkulasi Otomatis Nilai Transaksi
-
-**Mendukung:** M1
-
-- Formula: `Subtotal Item = qty × harga jual`; `Total Transaksi = Σ subtotal seluruh item dalam nota`
-
-### 4.4 Sinkronisasi Otomatis ke Stok Bahan Baku
-
-**Mendukung:** M2 (lewat fitur 1.4)
-
-- Setiap transaksi tersimpan otomatis memicu pengurangan stok bahan baku sesuai resep, tanpa input manual terpisah
-
-### 4.5 Riwayat & Pencarian Transaksi
-
-**Mendukung:** M5 (sumber data Modul 6)
-
-- Daftar seluruh transaksi dengan filter berdasarkan tanggal/rentang tanggal dan/atau menu
-
-### 4.6 Edit & Pembatalan Transaksi
-
-**Mendukung:** M1, M3, M5 (akurasi data agar kalkulasi tidak salah)
-
-- Transaksi dapat diedit/dibatalkan, dengan stok bahan baku otomatis dikembalikan (rollback) agar data stok & keuangan tetap konsisten
+- Sistem **tidak boleh** mencampur porsi carry-over dari lebih dari satu hari sebelumnya tanpa jejak — setiap batch carry-over menyimpan referensi ke `rekonsiliasi_harian` asalnya untuk audit trail.
+- Jika HPP porsi baru tidak diketahui (modal belum diinput), sistem menggunakan **HPP Estimasi** dari master lauk sebagai fallback, dan menandai hari itu sebagai "estimasi belum final" pada dashboard.
 
 ---
 
-## Modul 5 — Dashboard & Kalkulasi Keuntungan
+## 4. Functional Requirements (Fitur Utama)
 
-_Menjawab langsung kebutuhan mengetahui keuntungan bersih (M1) dan keuntungan dari hasil kalkulasi modal-pendapatan (M3)._
+### 4.1 Manajemen Master Lauk & HPP Estimasi
 
-### 5.1 Kalkulasi Pendapatan Kotor Otomatis
+- CRUD daftar jenis lauk/masakan (nama, foto opsional, satuan porsi).
+- Set **Harga Jual per Porsi** default (dapat diubah sewaktu-waktu).
+- Set **HPP Estimasi per Porsi** default — dipakai sebagai fallback ketika modal harian belum diinput atau untuk proyeksi cepat.
+- Toggle aktif/nonaktif lauk (untuk lauk musiman yang tidak selalu ada).
 
-**Menjawab langsung:** M1 (komponen "pendapatan kotor")
+### 4.2 Modul Input Pagi (Stok Awal Masakan)
 
-- Formula: `Pendapatan Kotor = Σ Total Transaksi (Modul 4) pada periode yang dipilih` — dihitung otomatis, tanpa penjumlahan manual
+- Menampilkan daftar carry-over otomatis dari sesi malam kemarin (read-only, hasil sistem).
+- Untuk setiap carry-over: tombol besar **"Masih Layak Jual"** / **"Basi — Catat Rugi"** (Porsi Basi Pagi).
+- Input jumlah porsi baru per lauk menggunakan stepper/tombol +/− besar (bukan keyboard angka manual) untuk kecepatan.
+- Input total modal bahan baku harian per lauk (angka bulat, opsional per item, boleh diisi belakangan sebelum malam).
+- Tombol simpan tunggal: **"Selesai Input Pagi"**.
 
-### 5.2 Kalkulasi Total Modal Terpakai (HPP Aktual)
+### 4.3 Modul Input Malam (Sisa Lauk, Basi, & Uang Laci)
 
-**Menjawab langsung:** M1, M3
+- Daftar semua lauk yang aktif hari ini dengan Stok Aktif Awal sudah terisi otomatis dari data pagi.
+- Untuk tiap lauk: dua kolom input stepper — **Sisa Layak Jual** dan **Porsi Rusak**.
+- Validasi otomatis: Sisa Layak Jual + Porsi Rusak tidak boleh melebihi Stok Aktif Awal.
+- Satu input tunggal: **Total Uang di Laci Kasir Malam Ini**.
+- Setelah simpan, sistem langsung menampilkan **Ringkasan Hari Ini** (lihat 4.4) sebagai konfirmasi visual instan.
 
-- Formula: `Total Modal Terpakai = Σ (jumlah porsi terjual aktual per menu × HPP Total/Porsi menu tsb)`, dihitung dari data transaksi riil (Modul 4), bukan dari rencana (Modul 3)
+### 4.4 Dashboard Analisis Pemilik
 
-### 5.3 Kalkulasi Keuntungan Bersih Otomatis
-
-**Menjawab langsung:** M1, M3
-
-- Formula: `Keuntungan Bersih = Pendapatan Kotor (5.1) − Total Modal Terpakai (5.2)`
-- Formula margin: `Margin Keuntungan = (Keuntungan Bersih ÷ Pendapatan Kotor) × 100%`
-
-### 5.4 Dashboard Ringkasan Real-Time
-
-**Menjawab langsung:** M1, M3
-
-- Tiga angka utama ditampilkan berdampingan: Pendapatan Kotor, Total Modal Terpakai, Keuntungan Bersih — otomatis ter-update setiap ada transaksi baru
-
-### 5.5 Breakdown Keuntungan per Menu
-
-**Menjawab langsung:** M1, M3; **Mendukung:** M4
-
-- Formula: `Keuntungan Menu = jumlah terjual × (harga jual − HPP Total/Porsi)`, ditampilkan terurut dari kontribusi tertinggi ke terendah — membantu evaluasi keputusan HPP/harga di Modul 2
-
-### 5.6 Perbandingan Rencana vs Realisasi
-
-**Menjawab langsung:** M2, M3
-
-- Membandingkan Proyeksi Modal & Keuntungan (3.5) dengan Modal & Keuntungan aktual pada hari yang sama (5.2, 5.3), beserta selisihnya
+- **Ringkasan Hari Ini:** Total Pendapatan Estimasi, Total HPP Nyata, Total Kerugian (basi pagi + malam), Keuntungan Bersih, dan **Selisih Kas** (Uang Laci Fisik − Total Pendapatan Estimasi).
+- **Detektor Selisih/Kebocoran Uang:** indikator warna (hijau = selisih wajar dalam toleransi, kuning = selisih sedang, merah = selisih besar/berpotensi kebocoran), dengan ambang batas toleransi yang dapat dikonfigurasi pemilik.
+- **Tren Profit Harian/Mingguan:** grafik sederhana (bar/line chart) untuk 7 dan 30 hari terakhir.
+- **Ranking Lauk Terlaris & Paling Sering Basi:** membantu pemilik menyesuaikan jumlah masak besok.
+- Semua visual didesain untuk dibaca sekilas (glanceable), bukan tabel data mentah.
 
 ---
 
-## Modul 6 — Laporan & Analisis per Periode
+## 5. Technical Architecture & Data Model
 
-_Menjawab langsung kesulitan melakukan kalkulasi rekap manual per periode (M5)._
+### 5.1 Rekomendasi Tech Stack
 
-### 6.1 Filter & Pemilihan Periode Laporan
+| Layer                               | Rekomendasi                                                                                                                                                     | Alasan                                                                                                                                  |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend                            | **Vue 3 (Composition API) + TypeScript + Vite**, styling dengan **Tailwind CSS**, dikonfigurasi sebagai **PWA** (`vite-plugin-pwa` / manifest + service worker) | Mobile-first, installable ke home screen tanpa app store, type-safety untuk logika kalkulasi HPP yang kompleks, cepat dikembangkan solo |
+| Backend & Auth                      | **Supabase** (PostgreSQL + Auth + Row Level Security)                                                                                                           | Backend-as-a-service, cocok untuk proyek personal, generated columns native di Postgres                                                 |
+| State/Data Fetching                 | **Supabase JS Client + Pinia** (state management) **+ TanStack Query for Vue**                                                                                  | Pinia untuk state global (sesi hari berjalan, status pagi/malam), TanStack Query untuk caching & optimistic update saat tap tombol      |
+| Hosting                             | **Vercel** atau **Netlify** (frontend, static/SSR build via Vite) + **Supabase Cloud** (database)                                                               | Free tier cukup untuk skala 1 warung, deploy langsung dari Git                                                                          |
+| Offline Support (opsional lanjutan) | Service Worker caching + local queue sebelum sync ke Supabase                                                                                                   | Antisipasi warung dengan koneksi internet tidak stabil saat input pagi/malam                                                            |
 
-**Menjawab langsung:** M5
+### 5.2 Skema Database Minimalis (PostgreSQL / Supabase)
 
-- Pilihan periode: Harian, Mingguan, Bulanan, Tahunan, dan Rentang Tanggal Custom
+```sql
+-- =========================================================
+-- 1. MASTER LAUK
+-- =========================================================
+CREATE TABLE master_lauk (
+    id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nama_lauk           TEXT NOT NULL,
+    harga_jual_porsi    NUMERIC(12,2) NOT NULL DEFAULT 0,
+    hpp_estimasi_porsi  NUMERIC(12,2) NOT NULL DEFAULT 0,
+    is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-### 6.2 Rekap Otomatis Pendapatan, Modal & Keuntungan per Periode
+-- =========================================================
+-- 2. REKONSILIASI HARIAN (1 baris = 1 hari operasional warung)
+-- =========================================================
+CREATE TABLE rekonsiliasi_harian (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tanggal                 DATE NOT NULL UNIQUE,
+    status                  TEXT NOT NULL DEFAULT 'pagi_pending'
+                             CHECK (status IN ('pagi_pending','pagi_selesai','malam_selesai')),
+    total_uang_laci         NUMERIC(12,2),
 
-**Menjawab langsung:** M5
+    -- Kolom agregat, diisi via trigger/fungsi setelah detail_stok_harian lengkap
+    total_pendapatan_estimasi NUMERIC(12,2) DEFAULT 0,
+    total_hpp_nyata            NUMERIC(12,2) DEFAULT 0,
+    total_kerugian              NUMERIC(12,2) DEFAULT 0,
 
-- Sistem otomatis menjumlahkan seluruh data transaksi (Modul 4) dan hasil kalkulasi keuntungan (Modul 5) dalam periode terpilih menjadi satu rekap: total pendapatan, total modal, total keuntungan, jumlah transaksi, rata-rata keuntungan per hari
+    -- Generated column: keuntungan bersih dihitung otomatis oleh Postgres
+    keuntungan_bersih GENERATED ALWAYS AS (
+        total_pendapatan_estimasi - total_hpp_nyata - total_kerugian
+    ) STORED,
 
-### 6.3 Grafik Tren Penjualan & Keuntungan
+    -- Generated column: selisih kas untuk detektor kebocoran
+    selisih_kas GENERATED ALWAYS AS (
+        total_uang_laci - total_pendapatan_estimasi
+    ) STORED,
 
-**Menjawab langsung:** M5
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-- Visualisasi grafik (garis/batang) untuk pendapatan, modal, dan keuntungan dari waktu ke waktu, mengikuti granularitas periode yang dipilih
+-- =========================================================
+-- 3. DETAIL STOK HARIAN (1 baris = 1 lauk pada 1 hari tertentu)
+-- =========================================================
+CREATE TABLE detail_stok_harian (
+    id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    rekonsiliasi_id         UUID NOT NULL REFERENCES rekonsiliasi_harian(id) ON DELETE CASCADE,
+    lauk_id                 UUID NOT NULL REFERENCES master_lauk(id),
 
-### 6.4 Perbandingan Antar Periode
+    -- Referensi carry-over: batch asal dari hari sebelumnya (nullable jika tidak ada carry-over)
+    carry_over_dari_id      UUID REFERENCES detail_stok_harian(id),
 
-**Menjawab langsung:** M5
+    -- ===== INPUT PAGI =====
+    porsi_carry_over        INTEGER NOT NULL DEFAULT 0,      -- sisa layak jual dari kemarin
+    hpp_carry_over_porsi    NUMERIC(12,2) NOT NULL DEFAULT 0, -- HPP asal dari batch kemarin
+    porsi_basi_pagi         INTEGER NOT NULL DEFAULT 0,      -- carry-over yang ternyata basi pagi ini
+    porsi_baru_dimasak      INTEGER NOT NULL DEFAULT 0,
+    modal_baru_total        NUMERIC(12,2) NOT NULL DEFAULT 0, -- total modal bahan baku porsi baru hari ini
 
-- Membandingkan dua periode yang setara (misal bulan ini vs bulan lalu, tahun ini vs tahun lalu), termasuk persentase kenaikan/penurunan pendapatan dan keuntungan
+    -- ===== INPUT MALAM =====
+    porsi_sisa_layak_jual   INTEGER NOT NULL DEFAULT 0,      -- carry-over untuk besok
+    porsi_rusak_malam       INTEGER NOT NULL DEFAULT 0,
 
-### 6.5 Laporan Menu Terlaris & Paling Menguntungkan per Periode
+    -- ===== GENERATED COLUMNS (kalkulasi otomatis) =====
 
-**Menjawab langsung:** M5; **Mendukung:** M4
+    -- Stok Aktif Awal = carry-over layak (sudah dikurangi basi pagi) + porsi baru
+    stok_aktif_awal GENERATED ALWAYS AS (
+        (porsi_carry_over - porsi_basi_pagi) + porsi_baru_dimasak
+    ) STORED,
 
-- Ranking menu berdasarkan jumlah porsi terjual dan berdasarkan kontribusi keuntungan (5.5), difilter sesuai periode terpilih
+    -- HPP porsi baru dihitung manual di sisi aplikasi (modal_baru_total / porsi_baru_dimasak)
+    -- disimpan sebagai kolom biasa agar bisa diisi via trigger setelah insert
+    hpp_baru_porsi NUMERIC(12,2) NOT NULL DEFAULT 0,
 
-### 6.6 Ekspor Laporan
+    -- HPP Gabungan (Weighted Average) — generated column
+    hpp_gabungan_porsi GENERATED ALWAYS AS (
+        CASE
+            WHEN ( (porsi_carry_over - porsi_basi_pagi) + porsi_baru_dimasak ) = 0 THEN 0
+            ELSE (
+                ( (porsi_carry_over - porsi_basi_pagi) * hpp_carry_over_porsi )
+                + ( porsi_baru_dimasak * hpp_baru_porsi )
+            ) / ( (porsi_carry_over - porsi_basi_pagi) + porsi_baru_dimasak )
+        END
+    ) STORED,
 
-**Menjawab langsung:** M5
+    -- Porsi Dikonsumsi = Stok Aktif Awal - Sisa Layak Jual - Rusak Malam
+    porsi_dikonsumsi GENERATED ALWAYS AS (
+        ( (porsi_carry_over - porsi_basi_pagi) + porsi_baru_dimasak )
+        - porsi_sisa_layak_jual - porsi_rusak_malam
+    ) STORED,
 
-- Unduh rekap laporan periode terpilih dalam format PDF atau Excel
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT chk_stok_non_negative CHECK (
+        porsi_sisa_layak_jual + porsi_rusak_malam
+        <= (porsi_carry_over - porsi_basi_pagi) + porsi_baru_dimasak
+    )
+);
+
+-- =========================================================
+-- INDEX PENDUKUNG
+-- =========================================================
+CREATE INDEX idx_detail_rekonsiliasi ON detail_stok_harian(rekonsiliasi_id);
+CREATE INDEX idx_detail_lauk ON detail_stok_harian(lauk_id);
+CREATE INDEX idx_rekonsiliasi_tanggal ON rekonsiliasi_harian(tanggal);
+```
+
+**Catatan implementasi:**
+
+- Kolom agregat pada `rekonsiliasi_harian` (`total_pendapatan_estimasi`, `total_hpp_nyata`, `total_kerugian`) **tidak** dijadikan generated column karena bergantung pada agregasi lintas-tabel (`SUM` dari `detail_stok_harian`) — Postgres generated column tidak mendukung subquery. Solusi: gunakan **trigger** `AFTER INSERT/UPDATE` pada `detail_stok_harian` yang meng-update baris `rekonsiliasi_harian` terkait, atau hitung on-the-fly via **VIEW**.
+- Disarankan membuat `VIEW ringkasan_harian` yang meng-`JOIN` kedua tabel untuk kebutuhan dashboard, agar logika agregasi tidak terduplikasi di frontend.
+- Row Level Security (RLS) Supabase cukup diset satu kebijakan sederhana (single-owner access) karena ini proyek personal untuk satu warung.
+
+---
+
+## 6. UI/UX Design Guidelines
+
+### 6.1 Prinsip Desain Utama
+
+- **Mobile-first, satu tangan:** Semua elemen interaktif utama berada dalam jangkauan ibu jari (thumb zone) karena kemungkinan digunakan sambil berdiri/bergegas.
+- **Tombol grid besar, minim mengetik:** Gunakan stepper (`−` / angka / `+`) dan grid kartu per lauk dengan foto, bukan form panjang bergaya tabel. Input angka manual hanya untuk nominal uang (total laci, total modal).
+- **Zero-training onboarding:** Alur pagi dan malam harus bisa dipahami tanpa penjelasan tertulis — gunakan ikon besar, warna, dan label kata kerja langsung ("Masih Layak Jual", "Catat Rugi").
+- **Warna kontras sebagai indikator status:**
+  - Hijau → aman/normal (stok sesuai, selisih kas dalam toleransi).
+  - Kuning → perlu perhatian (selisih kas sedang, stok basi lebih tinggi dari rata-rata).
+  - Merah → kritis (selisih kas besar, indikasi kebocoran, atau lupa input).
+- **Progress state yang jelas:** Status harian (`pagi_pending` → `pagi_selesai` → `malam_selesai`) ditampilkan sebagai badge/progress bar di halaman utama, agar pemilik langsung tahu tahap mana yang belum diselesaikan.
+- **Konfirmasi instan, bukan laporan tertunda:** Setelah input malam disimpan, ringkasan untung/rugi hari itu langsung tampil di layar yang sama — tanpa perlu berpindah menu ke dashboard.
+- **Toleransi kesalahan:** Sediakan opsi edit/undo untuk input hari yang sama sebelum status berubah menjadi `malam_selesai`, mengingat pengguna awam rentan salah tap.
+- **Tipografi besar & jelas:** Ukuran font minimum 16px untuk teks, 24–32px untuk angka hasil kalkulasi (profit, selisih kas) agar mudah dibaca sekilas oleh pengguna berusia menengah ke atas.
+
+---
+
+_Dokumen ini disusun sebagai spesifikasi siap-implementasi. Struktur skema database dan rumus kalkulasi pada Bab 3 & 5 dapat langsung digunakan sebagai acuan pengembangan MVP._

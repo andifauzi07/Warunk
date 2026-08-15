@@ -130,6 +130,8 @@ export async function seedDetailHariIni(
 export interface DetailPagiInput {
   id: string
   lauk_id: string
+  porsi_carry_over: number
+  hpp_carry_over_porsi: number
   porsi_basi_pagi: number
   porsi_baru_dimasak: number
   modal_baru_total: number
@@ -140,9 +142,11 @@ export async function simpanPagi(
   rekonsiliasiId: string,
   items: DetailPagiInput[],
 ): Promise<void> {
+  const user_id = await currentUserId()
+  if (!user_id) throw new Error('Belum login')
   const { error } = await supabase
     .from('detail_stok_harian')
-    .upsert(items.map((i) => ({ ...i, rekonsiliasi_id: rekonsiliasiId })))
+    .upsert(items.map((i) => ({ ...i, user_id, rekonsiliasi_id: rekonsiliasiId })))
   if (error) throw error
 
   const { error: errStatus } = await supabase
@@ -154,6 +158,13 @@ export async function simpanPagi(
 
 export interface DetailMalamInput {
   id: string
+  lauk_id: string
+  porsi_carry_over: number
+  hpp_carry_over_porsi: number
+  porsi_basi_pagi: number
+  porsi_baru_dimasak: number
+  modal_baru_total: number
+  hpp_baru_porsi: number
   porsi_sisa_layak_jual: number
   porsi_rusak_malam: number
   porsi_konsumsi: number
@@ -166,9 +177,13 @@ export async function simpanMalam(
   uangDigital: number,
   modalKembalianPakai: number,
 ): Promise<void> {
+  const user_id = await currentUserId()
+  if (!user_id) throw new Error('Belum login')
   // Detail dulu (trigger menghitung ulang agregat saat status belum terkunci),
   // lalu kunci status + kolom uang.
-  const { error } = await supabase.from('detail_stok_harian').upsert(items)
+  const { error } = await supabase
+    .from('detail_stok_harian')
+    .upsert(items.map((i) => ({ ...i, user_id, rekonsiliasi_id: rekonsiliasiId })))
   if (error) throw error
 
   const { error: errStatus } = await supabase

@@ -106,6 +106,7 @@ function validRow(r: RowMalam): boolean {
 const semuaValid = computed(() => rows.value.every(validRow))
 
 const status = computed(() => hari.rekonsiliasi.value?.status)
+const rek = computed(() => hari.rekonsiliasi.value)
 const terkunci = computed(() => status.value === 'malam_selesai')
 const belumPagi = computed(() => status.value === 'pagi_pending' || status.value === 'libur')
 
@@ -141,11 +142,16 @@ async function simpan() {
       const item = itemKalkulasi(r)
       return {
         id: r.id,
+        lauk_id: r.laukId,
+        porsi_carry_over: r.porsiCarryOver,
+        hpp_carry_over_porsi: r.hppCarryOver,
+        porsi_basi_pagi: r.basiPagi,
+        porsi_baru_dimasak: r.porsiBaru,
+        modal_baru_total: r.modalBaru,
+        hpp_baru_porsi: hppBaruPorsi(item),
         porsi_sisa_layak_jual: r.sisaLayak,
         porsi_rusak_malam: r.rusakMalam,
         porsi_konsumsi: makanSendiri.value ? r.konsumsi : 0,
-        modal_baru_total: r.modalBaru,
-        hpp_baru_porsi: hppBaruPorsi(item),
       }
     })
     await hari.simpanMalam(
@@ -181,11 +187,87 @@ async function simpan() {
       }}
     </div>
 
-    <div v-else-if="terkunci" class="mt-4 rounded-xl border border-zinc-300 bg-zinc-100 p-4 text-center text-zinc-600">
-      Hari ini sudah terkunci. Data tidak dapat diubah lagi.
+    <!-- Terkunci: tampilan ringkasan read-only -->
+    <div v-else-if="terkunci && rows.length > 0" class="mt-4 flex flex-col gap-3">
+      <div class="rounded-xl bg-green-50 p-4 text-green-800">
+        <p class="font-semibold">✓ Input malam tersimpan</p>
+        <p class="mt-0.5 text-sm">Hari ini terkunci — data tidak dapat diubah lagi.</p>
+      </div>
+
+      <div class="rounded-xl bg-white p-4 shadow-sm">
+        <p class="text-sm font-medium text-zinc-500">Ringkasan Hari Ini</p>
+        <div class="mt-2 flex flex-col gap-1.5 text-sm">
+          <div class="flex justify-between">
+            <span>Pendapatan estimasi</span>
+            <span class="font-semibold tabular-nums">{{ formatRupiah(rek?.total_pendapatan_estimasi ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between text-zinc-600">
+            <span>─ dari digital</span>
+            <span class="tabular-nums">{{ formatRupiah(rek?.total_uang_digital ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between text-zinc-600">
+            <span>─ tunai diharapkan</span>
+            <span class="tabular-nums">{{ formatRupiah((rek?.total_pendapatan_estimasi ?? 0) - (rek?.total_uang_digital ?? 0)) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>HPP nyata</span>
+            <span class="font-semibold tabular-nums">{{ formatRupiah(rek?.total_hpp_nyata ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Kerugian (basi/rusak)</span>
+            <span class="font-semibold tabular-nums">{{ formatRupiah(rek?.total_kerugian ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between border-t border-zinc-200 pt-1.5">
+            <span>Keuntungan bersih</span>
+            <span class="angka-besar text-green-700">{{ formatRupiah(rek?.keuntungan_bersih ?? 0) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Uang di laci (net)</span>
+            <span class="tabular-nums">{{ formatRupiah((rek?.total_uang_laci ?? 0) - (rek?.modal_kembalian_pakai ?? 0)) }}</span>
+          </div>
+          <div class="flex justify-between border-t border-zinc-200 pt-1.5">
+            <span>Selisih kas</span>
+            <span
+              class="font-bold tabular-nums"
+              :class="(rek?.selisih_kas ?? 0) === 0 ? 'text-green-700' : (rek?.selisih_kas ?? 0) > 0 ? 'text-amber-600' : 'text-red-600'"
+            >
+              {{ formatRupiah(rek?.selisih_kas ?? 0) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div v-for="row in rows" :key="row.id" class="rounded-xl border border-zinc-200 bg-white p-4">
+        <div class="flex items-center justify-between">
+          <p class="font-semibold">{{ row.namaLauk }}</p>
+          <p class="text-sm text-zinc-500">Terjual ≈ {{ Math.max(0, porsiDikonsumsi(itemKalkulasi(row))) }} porsi</p>
+        </div>
+        <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+          <div>
+            <span class="text-zinc-500">Stok awal</span>
+            <p class="font-semibold tabular-nums">{{ stokAktif(row) }}</p>
+          </div>
+          <div>
+            <span class="text-zinc-500">Sisa layak besok</span>
+            <p class="font-semibold tabular-nums">{{ row.sisaLayak }}</p>
+          </div>
+          <div>
+            <span class="text-zinc-500">Rusak/basi</span>
+            <p class="font-semibold tabular-nums">{{ row.rusakMalam }}</p>
+          </div>
+          <div v-if="row.konsumsi > 0">
+            <span class="text-zinc-500">Dimakan sendiri</span>
+            <p class="font-semibold tabular-nums">{{ row.konsumsi }}</p>
+          </div>
+          <div v-if="row.modalBaru > 0">
+            <span class="text-zinc-500">Modal bahan</span>
+            <p class="font-semibold tabular-nums">{{ formatRupiah(row.modalBaru) }}</p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div v-if="terkunci || (status === 'pagi_selesai' && rows.length > 0)" class="mt-4">
+    <div v-else-if="status === 'pagi_selesai' && rows.length > 0" class="mt-4">
       <div class="rounded-xl bg-white p-4 shadow-sm">
         <p class="text-sm font-medium text-zinc-500">Ringkasan Hari Ini</p>
         <div class="mt-2 flex flex-col gap-1.5 text-sm">

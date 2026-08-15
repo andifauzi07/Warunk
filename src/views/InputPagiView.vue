@@ -86,6 +86,9 @@ function tandaiBasi(r: RowPagi) {
 }
 
 const terkunci = computed(() => hari.rekonsiliasi.value?.status === 'malam_selesai')
+const sudahSelesaiPagi = computed(() => hari.rekonsiliasi.value?.status === 'pagi_selesai')
+const editMode = ref(false)
+const tampilReview = computed(() => sudahSelesaiPagi.value && !editMode.value)
 const simpanError = ref('')
 const simpanLoading = ref(false)
 
@@ -98,6 +101,8 @@ async function simpan() {
       return {
         id: r.id,
         lauk_id: r.laukId,
+        porsi_carry_over: r.porsiCarryOver,
+        hpp_carry_over_porsi: r.hppCarryOver,
         porsi_basi_pagi: r.basiPagi,
         porsi_baru_dimasak: r.porsiBaru,
         modal_baru_total: r.modalBaru,
@@ -107,6 +112,7 @@ async function simpan() {
     await hari.simpanPagi(items)
     initialized = false
     await hari.muat(tanggal.value, laukAktif.value)
+    editMode.value = false
   } catch (e) {
     simpanError.value = pesanError(e)
   } finally {
@@ -125,14 +131,51 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
     <p v-if="hari.error" class="mt-4 text-sm text-red-600">{{ hari.error }}</p>
     <p v-if="simpanError" class="mt-4 text-sm text-red-600">{{ simpanError }}</p>
 
-    <div v-if="terkunci" class="mt-4 rounded-xl border border-zinc-300 bg-zinc-100 p-4 text-center text-zinc-600">
-      Hari ini sudah terkunci (input malam selesai). Tidak bisa mengubah input pagi.
-    </div>
-
     <div v-if="!adaLaukAktif && !laukLoading" class="mt-8 text-center text-zinc-500">
       Belum ada lauk aktif. Tambahkan di Master Lauk dulu.
     </div>
 
+    <!-- Mode terkunci / ringkasan -->
+    <div v-else-if="terkunci || tampilReview" class="mt-4 flex flex-col gap-3">
+      <div v-if="terkunci" class="rounded-xl border border-zinc-300 bg-zinc-100 p-4 text-center text-zinc-600">
+        Hari ini sudah terkunci (input malam selesai). Tidak bisa mengubah input pagi.
+      </div>
+      <div v-else class="rounded-xl bg-green-50 p-4 text-green-800">
+        <p class="font-semibold">✓ Input pagi tersimpan</p>
+      </div>
+
+      <div v-if="rows.length > 0" class="flex flex-col gap-3">
+        <div
+          v-for="row in rows"
+          :key="row.id"
+          class="rounded-xl border border-zinc-200 bg-white p-4"
+        >
+          <div class="flex items-center justify-between">
+            <p class="font-semibold">{{ row.namaLauk }}</p>
+            <p class="text-sm text-zinc-500">{{ formatRupiah(row.hargaJualPorsi) }}/porsi</p>
+          </div>
+          <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-600">
+            <span v-if="row.porsiCarryOver > 0">Sisa kemarin: <strong>{{ row.porsiCarryOver }}</strong> porsi</span>
+            <span v-if="row.basiPagi > 0" class="text-red-600">Basi: <strong>{{ row.basiPagi }}</strong> porsi</span>
+            <span>Masak baru: <strong>{{ row.porsiBaru }}</strong> porsi</span>
+            <span>Modal: <strong>{{ formatRupiah(row.modalBaru) }}</strong></span>
+          </div>
+          <div class="mt-2 border-t border-dashed border-zinc-200 pt-2 text-sm text-zinc-600">
+            Stok aktif hari ini: <strong>{{ stokAktifAwal(itemKalkulasi(row)) }} porsi</strong>
+          </div>
+        </div>
+      </div>
+
+      <button
+        v-if="!terkunci"
+        @click="editMode = true"
+        class="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base font-medium text-zinc-700 active:bg-zinc-100"
+      >
+        Ubah Input Pagi
+      </button>
+    </div>
+
+    <!-- Mode input -->
     <div v-else class="mt-4 flex flex-col gap-3">
       <div
         v-for="row in rows"

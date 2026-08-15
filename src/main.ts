@@ -12,8 +12,9 @@ registerSW({ immediate: true })
 const app = createApp(App)
 app.use(createPinia())
 app.use(VueQueryPlugin)
-app.use(router)
 
 const session = useSessionStore()
 await session.init()
+
+app.use(router)
 app.mount('#app')

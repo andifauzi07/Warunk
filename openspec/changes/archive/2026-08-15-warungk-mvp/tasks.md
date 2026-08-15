@@ -71,10 +71,10 @@
 
 - [x] 11.1 Konfigurasi `vite-plugin-pwa` (manifest + service worker + ikon) agar installable ke home screen
 - [x] 11.2 Audit UI mobile-first: tombol minimal 48px dalam thumb zone, font ≥ 16px, angka hasil 24–32px
-- [ ] 11.3 Uji alur lengkap di viewport ponsel (devtools) dan mode offline dasar
+- [x] 11.3 Uji alur lengkap di viewport ponsel (devtools) dan mode offline dasar
 
 ## 12. Verifikasi Akhir
 
 - [x] 12.1 `bun run type-check` dan `bun run build` berjalan tanpa error
-- [ ] 12.2 Uji skenario end-to-end: master lauk → input pagi → (opsional libur) → input malam → dashboard, memverifikasi angka profit & selisih kas
-- [ ] 12.3 Uji validasi: opname melebihi stok, basi melebihi carry-over, kunci hari tidak bisa diedit
+- [x] 12.2 Uji skenario end-to-end: master lauk → input pagi → (opsional libur) → input malam → dashboard, memverifikasi angka profit & selisih kas
+- [x] 12.3 Uji validasi: opname melebihi stok, basi melebihi carry-over, kunci hari tidak bisa diedit

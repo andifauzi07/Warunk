@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { useSessionStore } from '@/stores/session'
+import { useRoute } from 'vue-router'
 
 const session = useSessionStore()
+const route = useRoute()
 
 const navItems = [
   { to: '/', label: 'Beranda', icon: '🏠' },
@@ -16,7 +18,7 @@ const navItems = [
     <router-view />
 
     <nav
-      v-if="session.user"
+      v-if="session.user && route.name !== 'login'"
       class="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-200 bg-white"
     >
       <div class="mx-auto flex max-w-md items-stretch">

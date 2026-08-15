@@ -43,8 +43,10 @@ const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const session = useSessionStore()
+  await session.waitForSession()
+  if (to.meta.public && session.user) return { name: 'home' }
   if (to.meta.public) return true
   if (!session.user) return { name: 'login' }
   return true

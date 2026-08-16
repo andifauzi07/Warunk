@@ -74,7 +74,7 @@ async function keluar() {
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="p-4 pb-20">
     <h1 class="text-xl font-bold">Pengaturan</h1>
     <p class="text-sm text-zinc-500">Warung & detektor kas</p>
 

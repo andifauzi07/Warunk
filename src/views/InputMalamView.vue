@@ -163,7 +163,7 @@ async function simpan() {
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="p-4 pb-20">
     <h1 class="text-xl font-bold">Input Malam</h1>
     <p class="text-sm text-zinc-500">Rekonsiliasi mundur — hitung yang terjual hari ini</p>
 

@@ -46,10 +46,10 @@ async function bukaLag() {
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="p-4 pb-20">
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-xl font-bold">WarungKas</h1>
+        <h1 class="text-xl font-bold">Warunk</h1>
         <p class="text-sm text-zinc-500">{{ tanggalBaca(tanggal) }}</p>
       </div>
       <div class="flex gap-1">

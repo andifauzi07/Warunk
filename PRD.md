@@ -4,7 +4,7 @@
 
 | Metadata      | Keterangan                                          |
 | ------------- | --------------------------------------------------- |
-| Nama Produk   | _(working title)_ WarungKas — Rekonsiliasi Mundur   |
+| Nama Produk   | _(working title)_ Warunk — Rekonsiliasi Mundur   |
 | Versi Dokumen | 1.0                                                 |
 | Tipe Proyek   | Personal Project / Impact-Driven untuk UMKM Kuliner |
 | Platform      | Mobile-First Progressive Web App (PWA)              |
@@ -16,7 +16,7 @@
 
 ### 1.1 Deskripsi Produk
 
-WarungKas adalah aplikasi web mobile-first (PWA) yang membantu pemilik warung nasi campur tradisional menghitung **keuntungan bersih harian secara otomatis**, tanpa mengganggu kecepatan pelayanan di jam sibuk. Berbeda dengan POS konvensional yang mencatat _setiap transaksi_ di kasir (dan terbukti gagal karena memperlambat antrean saat jam ramai), aplikasi ini menggunakan pendekatan **Backward Reconciliation (Rekonsiliasi Mundur)**: sistem tidak pernah mencatat apa yang dijual, melainkan menghitung apa yang **habis dikonsumsi** dengan membandingkan stok awal (pagi) dan stok akhir (malam) dari setiap jenis lauk/masakan.
+Warunk adalah aplikasi web mobile-first (PWA) yang membantu pemilik warung nasi campur tradisional menghitung **keuntungan bersih harian secara otomatis**, tanpa mengganggu kecepatan pelayanan di jam sibuk. Berbeda dengan POS konvensional yang mencatat _setiap transaksi_ di kasir (dan terbukti gagal karena memperlambat antrean saat jam ramai), aplikasi ini menggunakan pendekatan **Backward Reconciliation (Rekonsiliasi Mundur)**: sistem tidak pernah mencatat apa yang dijual, melainkan menghitung apa yang **habis dikonsumsi** dengan membandingkan stok awal (pagi) dan stok akhir (malam) dari setiap jenis lauk/masakan.
 
 Prinsip inti: _"Kita tidak perlu tahu siapa membeli apa. Kita cukup tahu apa yang hilang dari stok, dan itu adalah apa yang terjual."_
 

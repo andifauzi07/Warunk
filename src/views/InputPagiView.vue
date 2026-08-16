@@ -116,7 +116,7 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="p-4 pb-20">
     <h1 class="text-xl font-bold">Input Stok Pagi</h1>
     <p class="text-sm text-zinc-500">Baseline stok untuk hari ini</p>
 

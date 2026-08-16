@@ -130,7 +130,7 @@ const seringRusak = computed(() =>
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="p-4 pb-20">
     <h1 class="text-xl font-bold">Analisis</h1>
     <p class="text-sm text-zinc-500">Laba & kesehatan kas warungmu</p>
 

@@ -9,7 +9,7 @@ const supabaseKey =
 if (!supabaseUrl || !supabaseKey) {
   // Jangan crash saat build/type-check; error jelas muncul saat runtime.
   console.error(
-    'WarungKas: VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY (atau ANON_KEY) belum diisi. ' +
+    'Warunk: VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY (atau ANON_KEY) belum diisi. ' +
       'Buat project di supabase.com lalu salin .env.example ke .env',
   )
 }

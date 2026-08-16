@@ -17,7 +17,7 @@ const navItems = [
 </script>
 
 <template>
-  <div class="mx-auto min-h-dvh max-w-md pb-20">
+  <div class="mx-auto min-h-dvh max-w-md">
     <router-view />
 
     <nav

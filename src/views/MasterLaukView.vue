@@ -79,7 +79,7 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
 </script>
 
 <template>
-  <div class="p-4">
+  <div class="p-4 pb-20">
     <div class="flex items-center justify-between">
       <div>
         <h1 class="text-xl font-bold">Master Lauk</h1>

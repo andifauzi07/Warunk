@@ -24,10 +24,10 @@ async function submit() {
 <template>
   <div class="flex min-h-dvh flex-col items-center justify-center px-6">
     <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-sm">
-      <h1 class="text-2xl font-bold text-green-700">WarunK</h1>
-      <p class="mt-1 text-sm text-zinc-500">Hitung Mundur Stok Penjualan - untung langsung keliatan</p>
+      <img src="/main-logo.png" alt="WarunK" class="mx-auto h-48 w-48" /> 
+      <!-- <p class="text-center text-sm text-zinc-500">Hitung Mundur Stok Penjualan, <br/> untung langsung keliatan</p> -->
 
-      <form class="mt-6 flex flex-col gap-4" @submit.prevent="submit">
+      <form class="flex flex-col gap-4" @submit.prevent="submit">
         <label class="flex flex-col gap-1">
           <span class="text-sm font-medium">Email</span>
           <input
@@ -51,7 +51,7 @@ async function submit() {
           />
         </label>
 
-        <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+        <p v-if="error" class="text-sm text-center text-red-600">{{ error }}</p>
 
         <button
           type="submit"
@@ -60,6 +60,7 @@ async function submit() {
         >
           {{ submitting ? 'Masuk…' : 'Masuk' }}
         </button>
+        <h1 class="text-xs text-center font-light text-green-700">Created by <a href="https://www.instagram.com/andfauzii/" target="blank">@andifauzi</a> 2026</h1>
       </form>
     </div>
   </div>

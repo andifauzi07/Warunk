@@ -16,8 +16,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico'],
       manifest: {
-        name: 'WarungKas — Rekonsiliasi Mundur',
-        short_name: 'WarungKas',
+        name: 'Warunk',
+        short_name: 'Warunk',
         description: 'Hitung profit harian warung nasi campur via rekonsiliasi mundur',
         theme_color: '#16a34a',
         background_color: '#f4f4f5',

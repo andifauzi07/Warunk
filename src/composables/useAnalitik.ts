@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/vue-query'
+import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import { computed, ref, type Ref } from 'vue'
 import { fetchRankingLauk, fetchRekonsiliasiRange, fetchRingkasanHarian } from '@/lib/services/analitik'
 import { tambahHari } from '@/lib/format'
@@ -15,11 +15,13 @@ export function useAnalitik(tanggal: string, rentangRef?: Ref<number>) {
   const tren = useQuery({
     queryKey: computed(() => ['tren', rentang.value, tanggal]),
     queryFn: () => fetchRekonsiliasiRange(dari.value, tanggal),
+    placeholderData: keepPreviousData,
   })
 
   const ranking = useQuery({
     queryKey: computed(() => ['ranking-lauk', rentang.value, tanggal]),
     queryFn: () => fetchRankingLauk(dari.value, tanggal),
+    placeholderData: keepPreviousData,
   })
 
   return { ringkasanHariIni, tren, ranking, dari, rentang }

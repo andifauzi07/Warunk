@@ -5,7 +5,7 @@ import { usePengaturan } from '@/composables/usePengaturan'
 import { useHariStore } from '@/stores/hari'
 import { useAnalitik } from '@/composables/useAnalitik'
 import { statusSelisih } from '@/lib/engine'
-import { formatAngka, formatRupiah, tambahHari } from '@/lib/format'
+import { formatAngka, formatRupiah, pesanError, tambahHari } from '@/lib/format'
 import type { StatusHarian } from '@/types/database'
 
 const { tanggal } = storeToRefs(useHariStore())
@@ -127,10 +127,6 @@ const terjual = computed(() =>
 const seringRusak = computed(() =>
   (rankingData.value ?? []).filter((r) => r.porsi_rusak_total > 0).slice(0, 5),
 )
-
-const loading = computed(
-  () => ringkasanLoading.value || trenLoading.value || rankingLoading.value,
-)
 </script>
 
 <template>
@@ -138,97 +134,130 @@ const loading = computed(
     <h1 class="text-xl font-bold">Analisis</h1>
     <p class="text-sm text-zinc-500">Laba & kesehatan kas warungmu</p>
 
-    <p v-if="ringkasanError || trenError || rankingError" class="mt-4 text-sm text-red-600">
-      {{ ringkasanError?.message || trenError?.message || rankingError?.message }}
-    </p>
-
-    <div v-if="loading" class="mt-8 text-center text-zinc-500">Memuat…</div>
-
-    <template v-else>
-      <!-- Ringkasan Hari Ini -->
-      <div class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-zinc-500">Hari ini</p>
-          <span
-            v-if="ringkasan"
-            class="rounded-full px-3 py-1 text-xs font-medium"
-            :class="ringkasan.status === 'malam_selesai' ? 'bg-green-100 text-green-800' : 'bg-zinc-100 text-zinc-600'"
-          >
-            {{ statusLabel[ringkasan.status] }}
-          </span>
-        </div>
-
-        <p v-if="!ringkasan" class="mt-4 text-sm text-zinc-500">
-          Belum ada data hari ini. Selesaikan input malam untuk melihat laba.
-        </p>
-
-        <template v-else>
-          <div class="mt-3 flex flex-col gap-1.5 text-sm">
-            <div class="flex justify-between">
-              <span>Pendapatan estimasi</span>
-              <span class="font-semibold tabular-nums">{{ formatRupiah(ringkasan.total_pendapatan_estimasi) }}</span>
-            </div>
-            <div class="flex justify-between text-zinc-600">
-              <span>─ tunai</span>
-              <span class="tabular-nums">{{ formatRupiah(ringkasan.total_pendapatan_estimasi - ringkasan.total_uang_digital) }}</span>
-            </div>
-            <div class="flex justify-between text-zinc-600">
-              <span>─ digital</span>
-              <span class="tabular-nums">{{ formatRupiah(ringkasan.total_uang_digital) }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>HPP nyata</span>
-              <span class="tabular-nums">{{ formatRupiah(ringkasan.total_hpp_nyata) }}</span>
-            </div>
-            <div class="flex justify-between">
-              <span>Kerugian (basi/rusak)</span>
-              <span class="tabular-nums">{{ formatRupiah(ringkasan.total_kerugian) }}</span>
-            </div>
-            <div class="flex justify-between border-t border-zinc-200 pt-2">
-              <span class="font-semibold">Keuntungan bersih</span>
-              <span
-                class="angka-besar"
-                :class="ringkasan.keuntungan_bersih >= 0 ? 'text-green-700' : 'text-red-600'"
-              >
-                {{ formatRupiah(ringkasan.keuntungan_bersih) }}
-              </span>
-            </div>
-          </div>
-
-          <div class="mt-3 rounded-xl border p-3" :class="levelSelisih === 'aman' ? 'border-green-200 bg-green-50' : levelSelisih === 'waspada' ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50'">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-medium">Selisih kas (toleransi {{ toleransi }}%)</span>
-              <span class="text-xs" :class="warnaSelisih[levelSelisih]">{{ labelSelisih[levelSelisih] }}</span>
-            </div>
-            <p class="mt-1 text-lg font-bold tabular-nums" :class="warnaSelisih[levelSelisih]">
-              {{ formatRupiah(ringkasan.selisih_kas) }}
-            </p>
-          </div>
-        </template>
+    <!-- Ringkasan Hari Ini -->
+    <div class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <p class="text-sm text-zinc-500">Hari ini</p>
+        <span
+          v-if="ringkasan"
+          class="rounded-full px-3 py-1 text-xs font-medium"
+          :class="ringkasan.status === 'malam_selesai' ? 'bg-green-100 text-green-800' : 'bg-zinc-100 text-zinc-600'"
+        >
+          {{ statusLabel[ringkasan.status] }}
+        </span>
       </div>
 
-      <!-- Tren -->
-      <div class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
-        <div class="flex items-center justify-between">
-          <p class="font-semibold">Tren keuntungan</p>
-          <div class="flex rounded-lg bg-zinc-100 p-1">
-            <button
-              class="rounded-md px-3 py-1 text-sm"
-              :class="rentang === 7 ? 'bg-white font-medium shadow-sm' : 'text-zinc-500'"
-              @click="rentang = 7"
+      <div v-if="ringkasanLoading" class="mt-3 animate-pulse space-y-2.5">
+        <div class="h-4 w-2/3 rounded bg-zinc-200"></div>
+        <div class="h-4 w-1/2 rounded bg-zinc-200"></div>
+        <div class="h-4 w-3/5 rounded bg-zinc-200"></div>
+        <div class="h-4 w-1/2 rounded bg-zinc-200"></div>
+        <div class="h-4 w-3/5 rounded bg-zinc-200"></div>
+        <div class="h-4 w-1/3 rounded bg-zinc-200"></div>
+        <div class="mt-2 h-20 rounded-xl bg-zinc-100"></div>
+      </div>
+
+      <p v-else-if="ringkasanError" class="mt-4 text-sm text-red-600">
+        {{ pesanError(ringkasanError) }}
+      </p>
+
+      <p v-else-if="!ringkasan" class="mt-4 text-sm text-zinc-500">
+        Belum ada data hari ini. Selesaikan input malam untuk melihat laba.
+      </p>
+
+      <template v-else>
+        <div class="mt-3 flex flex-col gap-1.5 text-sm">
+          <div class="flex justify-between">
+            <span>Pendapatan estimasi</span>
+            <span class="font-semibold tabular-nums">{{ formatRupiah(ringkasan.total_pendapatan_estimasi) }}</span>
+          </div>
+          <div class="flex justify-between text-zinc-600">
+            <span>─ tunai</span>
+            <span class="tabular-nums">{{ formatRupiah(ringkasan.total_pendapatan_estimasi - ringkasan.total_uang_digital) }}</span>
+          </div>
+          <div class="flex justify-between text-zinc-600">
+            <span>─ digital</span>
+            <span class="tabular-nums">{{ formatRupiah(ringkasan.total_uang_digital) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>HPP nyata</span>
+            <span class="tabular-nums">{{ formatRupiah(ringkasan.total_hpp_nyata) }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Kerugian (basi/rusak)</span>
+            <span class="tabular-nums">{{ formatRupiah(ringkasan.total_kerugian) }}</span>
+          </div>
+          <div class="flex justify-between border-t border-zinc-200 pt-2">
+            <span class="font-semibold">Keuntungan bersih</span>
+            <span
+              class="angka-besar"
+              :class="ringkasan.keuntungan_bersih >= 0 ? 'text-green-700' : 'text-red-600'"
             >
-              7 hari
-            </button>
-            <button
-              class="rounded-md px-3 py-1 text-sm"
-              :class="rentang === 30 ? 'bg-white font-medium shadow-sm' : 'text-zinc-500'"
-              @click="rentang = 30"
-            >
-              30 hari
-            </button>
+              {{ formatRupiah(ringkasan.keuntungan_bersih) }}
+            </span>
           </div>
         </div>
 
+        <div class="mt-3 rounded-xl border p-3" :class="levelSelisih === 'aman' ? 'border-green-200 bg-green-50' : levelSelisih === 'waspada' ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50'">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-medium">Selisih kas (toleransi {{ toleransi }}%)</span>
+            <span class="text-xs" :class="warnaSelisih[levelSelisih]">{{ labelSelisih[levelSelisih] }}</span>
+          </div>
+          <p class="mt-1 text-lg font-bold tabular-nums" :class="warnaSelisih[levelSelisih]">
+            {{ formatRupiah(ringkasan.selisih_kas) }}
+          </p>
+        </div>
+      </template>
+    </div>
+
+    <!-- Tren -->
+    <div class="mt-4 rounded-2xl bg-white p-5 shadow-sm">
+      <div class="flex items-center justify-between">
+        <p class="font-semibold">Tren keuntungan</p>
+        <div class="flex rounded-lg bg-zinc-100 p-1">
+          <button
+            class="rounded-md px-3 py-1 text-sm"
+            :class="rentang === 7 ? 'bg-white font-medium shadow-sm' : 'text-zinc-500'"
+            @click="rentang = 7"
+          >
+            7 hari
+          </button>
+          <button
+            class="rounded-md px-3 py-1 text-sm"
+            :class="rentang === 30 ? 'bg-white font-medium shadow-sm' : 'text-zinc-500'"
+            @click="rentang = 30"
+          >
+            30 hari
+          </button>
+        </div>
+      </div>
+
+      <div v-if="trenLoading" class="mt-4 animate-pulse space-y-3">
+        <div class="flex h-36 items-end gap-1">
+          <div
+            v-for="i in 12"
+            :key="i"
+            class="flex-1 rounded-t bg-zinc-200"
+            :style="{ height: 20 + (i % 6) * 10 + 'px' }"
+          ></div>
+        </div>
+        <div class="flex justify-between rounded-xl bg-zinc-50 p-3">
+          <div class="space-y-1.5">
+            <div class="h-3 w-24 rounded bg-zinc-200"></div>
+            <div class="h-4 w-28 rounded bg-zinc-200"></div>
+          </div>
+          <div class="space-y-1.5 text-right">
+            <div class="h-3 w-20 rounded bg-zinc-200"></div>
+            <div class="h-4 w-24 rounded bg-zinc-200"></div>
+          </div>
+        </div>
+      </div>
+
+      <p v-else-if="trenError" class="mt-4 text-sm text-red-600">
+        {{ pesanError(trenError) }}
+      </p>
+
+      <template v-else>
         <div class="mt-4 flex h-36 items-end gap-1">
           <div
             v-for="(b, i) in batang"
@@ -264,45 +293,69 @@ const loading = computed(
           <p class="font-semibold">⚠ {{ rentangLupa.jumlah }} hari tanpa input</p>
           <p class="text-xs">Tanggal {{ rentangLupa.awal }}{{ rentangLupa.jumlah > 1 ? ' s.d. ' + rentangLupa.akhir : '' }} tidak punya data.</p>
         </div>
+      </template>
 
-        <div class="mt-2 flex gap-4 text-xs text-zinc-500">
-          <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-green-600"></span> Laba</span>
-          <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-red-500"></span> Rugi</span>
-          <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-zinc-300"></span> Libur/0</span>
-          <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-red-300"></span> Lupa input</span>
+      <div class="mt-2 flex gap-4 text-xs text-zinc-500">
+        <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-green-600"></span> Laba</span>
+        <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-red-500"></span> Rugi</span>
+        <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-zinc-300"></span> Libur/0</span>
+        <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-red-300"></span> Lupa input</span>
+      </div>
+    </div>
+
+    <!-- Ranking -->
+    <div class="mt-4 grid grid-cols-1 gap-4">
+      <div class="rounded-2xl bg-white p-5 shadow-sm">
+        <p class="font-semibold">Lauk terlaris</p>
+        <div v-if="rankingLoading" class="mt-2 animate-pulse space-y-2.5">
+          <div v-for="i in 5" :key="i" class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="h-4 w-4 rounded bg-zinc-200"></div>
+              <div class="h-4 w-32 rounded bg-zinc-200"></div>
+            </div>
+            <div class="h-4 w-16 rounded bg-zinc-200"></div>
+          </div>
         </div>
+        <p v-else-if="rankingError" class="mt-2 text-sm text-red-600">
+          {{ pesanError(rankingError) }}
+        </p>
+        <p v-else-if="terjual.length === 0" class="mt-2 text-sm text-zinc-500">Belum ada data.</p>
+        <ol v-else class="mt-2 flex flex-col gap-2">
+          <li v-for="(r, i) in terjual" :key="r.lauk_id" class="flex items-center justify-between text-sm">
+            <span class="flex items-center gap-2">
+              <span class="w-5 font-semibold text-zinc-400">{{ i + 1 }}</span>
+              {{ r.nama_lauk }}
+            </span>
+            <span class="font-semibold tabular-nums">{{ formatAngka(r.porsi_dikonsumsi) }} porsi</span>
+          </li>
+        </ol>
       </div>
 
-      <!-- Ranking -->
-      <div class="mt-4 grid grid-cols-1 gap-4">
-        <div class="rounded-2xl bg-white p-5 shadow-sm">
-          <p class="font-semibold">Lauk terlaris</p>
-          <p v-if="terjual.length === 0" class="mt-2 text-sm text-zinc-500">Belum ada data.</p>
-          <ol v-else class="mt-2 flex flex-col gap-2">
-            <li v-for="(r, i) in terjual" :key="r.lauk_id" class="flex items-center justify-between text-sm">
-              <span class="flex items-center gap-2">
-                <span class="w-5 font-semibold text-zinc-400">{{ i + 1 }}</span>
-                {{ r.nama_lauk }}
-              </span>
-              <span class="font-semibold tabular-nums">{{ formatAngka(r.porsi_dikonsumsi) }} porsi</span>
-            </li>
-          </ol>
+      <div class="rounded-2xl bg-white p-5 shadow-sm">
+        <p class="font-semibold">Sering basi/rusak</p>
+        <div v-if="rankingLoading" class="mt-2 animate-pulse space-y-2.5">
+          <div v-for="i in 5" :key="i" class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div class="h-4 w-4 rounded bg-zinc-200"></div>
+              <div class="h-4 w-32 rounded bg-zinc-200"></div>
+            </div>
+            <div class="h-4 w-16 rounded bg-zinc-200"></div>
+          </div>
         </div>
-
-        <div class="rounded-2xl bg-white p-5 shadow-sm">
-          <p class="font-semibold">Sering basi/rusak</p>
-          <p v-if="seringRusak.length === 0" class="mt-2 text-sm text-zinc-500">Bagus — tidak ada yang terbuang.</p>
-          <ol v-else class="mt-2 flex flex-col gap-2">
-            <li v-for="(r, i) in seringRusak" :key="r.lauk_id" class="flex items-center justify-between text-sm">
-              <span class="flex items-center gap-2">
-                <span class="w-5 font-semibold text-zinc-400">{{ i + 1 }}</span>
-                {{ r.nama_lauk }}
-              </span>
-              <span class="font-semibold text-red-600 tabular-nums">{{ formatAngka(r.porsi_rusak_total) }} porsi</span>
-            </li>
-          </ol>
-        </div>
+        <p v-else-if="rankingError" class="mt-2 text-sm text-red-600">
+          {{ pesanError(rankingError) }}
+        </p>
+        <p v-else-if="seringRusak.length === 0" class="mt-2 text-sm text-zinc-500">Bagus — tidak ada yang terbuang.</p>
+        <ol v-else class="mt-2 flex flex-col gap-2">
+          <li v-for="(r, i) in seringRusak" :key="r.lauk_id" class="flex items-center justify-between text-sm">
+            <span class="flex items-center gap-2">
+              <span class="w-5 font-semibold text-zinc-400">{{ i + 1 }}</span>
+              {{ r.nama_lauk }}
+            </span>
+            <span class="font-semibold text-red-600 tabular-nums">{{ formatAngka(r.porsi_rusak_total) }} porsi</span>
+          </li>
+        </ol>
       </div>
-    </template>
+    </div>
   </div>
 </template>

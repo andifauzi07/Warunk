@@ -142,13 +142,13 @@ Implementasi murni ada di [`src/lib/engine.ts`](src/lib/engine.ts) — pure func
 
 ### Detektor Selisih Kas
 
-`statusSelisih(selisih, pendapatan, toleransiPersen)` di `engine.ts`:
+`statusSelisih(selisih, pendapatan, toleransiPersen)` di `engine.ts` — membandingkan selisih kas mutlak dengan ambang toleransi yang bisa dikonfigurasi:
 
-| Kondisi                                         | Warna                         |
-| ----------------------------------------------- | ----------------------------- | ----------------------------------- | ---------- |
-| `                                               | selisih                       | ≤ ambang` (pendapatan × toleransi%) | 🟢 Aman    |
-| `                                               | selisih                       | ≤ ambang × 2`                       | 🟡 Waspada |
-| di atas itu, atau selisih > 0 saat pendapatan 0 | 🔴 Kritis / potensi kebocoran |
+| Status | Kondisi | Contoh (pendapatan Rp 500.000, toleransi 5%) |
+| :----: | ------- | :------------------------------------------ |
+| 🟢 Aman | `abs(selisih)` ≤ ambang *(pendapatan × toleransi%)* | selisih ≤ **Rp 25.000** |
+| 🟡 Waspada | ambang < `abs(selisih)` ≤ ambang × 2 | **Rp 25.000 – Rp 50.000** |
+| 🔴 Kritis | di atas itu, atau `selisih` ≠ 0 saat pendapatan 0 | selisih > **Rp 50.000** *(potensi kebocoran)* |
 
 ### Aturan Penting
 
@@ -240,22 +240,22 @@ Warunk/
 
 6 migrasi SQL di `supabase/migrations/` (PostgreSQL 17 / Supabase):
 
-| Tabel                 | Fungsi                                                                                     |
-| --------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------- |
-| `master_lauk`         | Master lauk (nama, harga jual, HPP estimasi, `is_active`)                                  |
-| `rekonsiliasi_harian` | 1 baris = 1 hari operasional; status workflow `pagi_pending → pagi_selesai → malam_selesai | libur`; UNIQUE `(user_id, tanggal)` |
-| `detail_stok_harian`  | 1 baris = 1 lauk per hari; semua input pagi/malam + kolom generated                        |
-| `pengaturan_warung`   | Setting per-user (float, toleransi %, toggle digital); UNIQUE `user_id`                    |
+| Tabel | Fungsi |
+| :---: | ------- |
+| 🗃️ `master_lauk` | Master lauk (nama, harga jual, HPP estimasi, `is_active`) |
+| 📅 `rekonsiliasi_harian` | 1 baris = 1 hari operasional; status workflow `pagi_pending → pagi_selesai → malam_selesai` / `libur`; UNIQUE `(user_id, tanggal)` |
+| 🥗 `detail_stok_harian` | 1 baris = 1 lauk per hari; semua input pagi/malam + kolom generated |
+| ⚙️ `pengaturan_warung` | Setting per-user (float, toleransi %, toggle digital); UNIQUE `user_id` |
 
 ### Generated Columns (nilai otomatis dihitung Postgres)
 
-| Kolom                            | Rumus                                                             |
-| -------------------------------- | ----------------------------------------------------------------- |
-| `detail.stok_aktif_awal`         | `(porsi_carry_over − porsi_basi_pagi) + porsi_baru_dimasak`       |
-| `detail.hpp_gabungan_porsi`      | weighted average; `0` jika stok aktif = 0                         |
-| `detail.porsi_dikonsumsi`        | `stok_aktif_awal − sisa − rusak − dimakan sendiri`                |
-| `rekonsiliasi.keuntungan_bersih` | `pendapatan − hpp_nyata − kerugian`                               |
-| `rekonsiliasi.selisih_kas`       | `(uang_laci − modal_kembalian_pakai) + uang_digital − pendapatan` |
+| Kolom | Rumus |
+| :---: | ----- |
+| 📊 `detail.stok_aktif_awal` | `(porsi_carry_over − porsi_basi_pagi) + porsi_baru_dimasak` |
+| 🏷️ `detail.hpp_gabungan_porsi` | weighted average; `0` jika stok aktif = 0 |
+| 🍽️ `detail.porsi_dikonsumsi` | `stok_aktif_awal − sisa − rusak − dimakan sendiri` |
+| 💰 `rekonsiliasi.keuntungan_bersih` | `pendapatan − hpp_nyata − kerugian` |
+| 🧾 `rekonsiliasi.selisih_kas` | `(uang_laci − modal_kembalian_pakai) + uang_digital − pendapatan` |
 
 ### Trigger & View
 

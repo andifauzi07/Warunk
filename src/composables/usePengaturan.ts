@@ -10,6 +10,8 @@ export function usePengaturan() {
   const q = useQuery({
     queryKey: KEY,
     queryFn: svc.fetchPengaturan,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 
   const simpan = useMutation({

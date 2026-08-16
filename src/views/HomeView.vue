@@ -1,29 +1,15 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useMasterLauk } from '@/composables/useMasterLauk'
-import { useHariIni } from '@/composables/useHariIni'
+import { useStatusHari } from '@/composables/useStatusHari'
 import { useHariStore } from '@/stores/hari'
 import { STATUS_LABEL } from '@/types/database'
 import { tanggalBaca, pesanError } from '@/lib/format'
 
-const { data: laukList, isLoading: laukLoading } = useMasterLauk()
-const hari = useHariIni()
 const { tanggal } = storeToRefs(useHariStore())
+const { rekonsiliasi, isLoading, tandaiLibur: tandaiLiburMut, bukaLag: bukaLagMut } = useStatusHari(tanggal)
 
-const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active))
-
-watch(
-  laukAktif,
-  (lauk) => {
-    if (lauk.length > 0) {
-      hari.muat(tanggal.value, lauk)
-    }
-  },
-  { immediate: true },
-)
-
-const status = computed(() => hari.rekonsiliasi.value?.status)
+const status = computed(() => rekonsiliasi.value?.status)
 const statusLabel = computed(() => (status.value ? STATUS_LABEL[status.value] : 'Memuat…'))
 const aksiError = ref('')
 
@@ -43,7 +29,7 @@ const langkahIndex = computed(() => {
 async function tandaiLibur() {
   aksiError.value = ''
   try {
-    await hari.tandaiLibur(tanggal.value)
+    await tandaiLiburMut.mutateAsync()
   } catch (e) {
     aksiError.value = pesanError(e)
   }
@@ -52,7 +38,7 @@ async function tandaiLibur() {
 async function bukaLag() {
   aksiError.value = ''
   try {
-    await hari.bukaLag()
+    await bukaLagMut.mutateAsync()
   } catch (e) {
     aksiError.value = pesanError(e)
   }
@@ -84,7 +70,7 @@ async function bukaLag() {
 
     <p v-if="aksiError" class="mt-4 text-sm text-red-600">{{ aksiError }}</p>
 
-    <div v-if="laukLoading" class="mt-8 text-center text-zinc-500">Memuat…</div>
+    <div v-if="isLoading" class="mt-8 text-center text-zinc-500">Memuat…</div>
 
     <!-- Status libur: tenang -->
     <div

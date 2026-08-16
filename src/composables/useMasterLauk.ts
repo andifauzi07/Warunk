@@ -4,23 +4,30 @@ import type { MasterLauk } from '@/types/database'
 
 const KEY = ['master-lauk']
 
+function invalidateTerkait(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: KEY })
+  qc.invalidateQueries({ queryKey: ['hari-ini'] })
+}
+
 export function useMasterLauk() {
   const qc = useQueryClient()
 
   const q = useQuery({
     queryKey: KEY,
     queryFn: svc.fetchMasterLauk,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   })
 
   const tambah = useMutation({
     mutationFn: svc.createLauk,
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => invalidateTerkait(qc),
   })
 
   const ubah = useMutation({
     mutationFn: ({ id, input }: { id: string; input: Partial<MasterLauk> }) =>
       svc.updateLauk(id, input),
-    onSuccess: () => qc.invalidateQueries({ queryKey: KEY }),
+    onSuccess: () => invalidateTerkait(qc),
   })
 
   return {

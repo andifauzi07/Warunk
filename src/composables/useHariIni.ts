@@ -1,4 +1,5 @@
-import { ref } from 'vue'
+import { computed, type Ref } from 'vue'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import * as svc from '@/lib/services/rekonsiliasi'
 import type {
   DetailStokLengkap,
@@ -6,73 +7,77 @@ import type {
   RekonsiliasiHarian,
 } from '@/types/database'
 
-export function useHariIni() {
-  const rekonsiliasi = ref<RekonsiliasiHarian | null>(null)
-  const detail = ref<DetailStokLengkap[]>([])
-  const loading = ref(false)
-  const error = ref('')
+export const hariIniKey = (tanggal: string) => ['hari-ini', tanggal] as const
 
-  async function muat(tanggal: string, laukAktif: MasterLauk[]) {
-    loading.value = true
-    error.value = ''
-    try {
-      const hasil = await svc.siapkanHari(tanggal, laukAktif)
-      rekonsiliasi.value = hasil.rekonsiliasi
-      detail.value = hasil.detail
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Gagal memuat data'
-    } finally {
-      loading.value = false
-    }
+export function useHariIni(
+  tanggal: Ref<string>,
+  laukAktif: Ref<MasterLauk[]>,
+) {
+  const qc = useQueryClient()
+  const key = computed(() => hariIniKey(tanggal.value))
+
+  const q = useQuery({
+    queryKey: key,
+    queryFn: () => svc.siapkanHari(tanggal.value, laukAktif.value),
+    enabled: computed(() => laukAktif.value.length > 0),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const invalidateHari = () => {
+    qc.invalidateQueries({ queryKey: ['hari-ini'] })
+    qc.invalidateQueries({ queryKey: ['hari-status'] })
   }
 
-  async function simpanPagi(items: svc.DetailPagiInput[]) {
-    if (!rekonsiliasi.value) throw new Error('Hari belum disiapkan')
-    await svc.simpanPagi(rekonsiliasi.value.id, items)
-    rekonsiliasi.value.status = 'pagi_selesai'
-  }
+  const rekonsiliasi = computed<RekonsiliasiHarian | null>(
+    () => q.data.value?.rekonsiliasi ?? null,
+  )
+  const detail = computed<DetailStokLengkap[]>(
+    () => q.data.value?.detail ?? [],
+  )
+  const error = computed(() => q.error.value?.message ?? '')
 
-  async function simpanMalam(
-    items: svc.DetailMalamInput[],
-    uangLaci: number,
-    uangDigital: number,
-    modalKembalianPakai: number,
-  ) {
-    if (!rekonsiliasi.value) throw new Error('Hari belum disiapkan')
-    await svc.simpanMalam(
-      rekonsiliasi.value.id,
-      items,
-      uangLaci,
-      uangDigital,
-      modalKembalianPakai,
-    )
-    const r = rekonsiliasi.value
-    r.status = 'malam_selesai'
-    r.total_uang_laci = uangLaci
-    r.total_uang_digital = uangDigital
-    r.modal_kembalian_pakai = modalKembalianPakai
-  }
+  const simpanPagi = useMutation({
+    mutationFn: (items: svc.DetailPagiInput[]) => {
+      const rek = rekonsiliasi.value
+      if (!rek) throw new Error('Hari belum disiapkan')
+      return svc.simpanPagi(rek.id, items)
+    },
+    onSuccess: () => invalidateHari(),
+  })
 
-  async function tandaiLibur(tanggal: string) {
-    const r = await svc.tandaiLibur(tanggal)
-    rekonsiliasi.value = r
-  }
-
-  async function bukaLag() {
-    if (!rekonsiliasi.value) throw new Error('Hari belum disiapkan')
-    await svc.updateStatusRekonsiliasi(rekonsiliasi.value.id, 'pagi_pending')
-    rekonsiliasi.value.status = 'pagi_pending'
-  }
+  const simpanMalam = useMutation({
+    mutationFn: (input: {
+      items: svc.DetailMalamInput[]
+      uangLaci: number
+      uangDigital: number
+      modalKembalianPakai: number
+    }) => {
+      const rek = rekonsiliasi.value
+      if (!rek) throw new Error('Hari belum disiapkan')
+      return svc.simpanMalam(
+        rek.id,
+        input.items,
+        input.uangLaci,
+        input.uangDigital,
+        input.modalKembalianPakai,
+      )
+    },
+    onSuccess: () => {
+      invalidateHari()
+      qc.invalidateQueries({ queryKey: ['ringkasan-harian'] })
+      qc.invalidateQueries({ queryKey: ['tren'] })
+      qc.invalidateQueries({ queryKey: ['ranking-lauk'] })
+    },
+  })
 
   return {
     rekonsiliasi,
     detail,
-    loading,
     error,
-    muat,
+    isLoading: q.isLoading,
+    isFetching: q.isFetching,
+    refetch: q.refetch,
     simpanPagi,
     simpanMalam,
-    tandaiLibur,
-    bukaLag,
   }
 }

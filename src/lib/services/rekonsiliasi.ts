@@ -88,16 +88,19 @@ export async function getCarryOverDetail(
  * Memastikan baris detail untuk hari ini tersedia untuk setiap lauk aktif.
  * Carry-over diambil dari hari operasional terakhir (dapat melompati hari libur).
  * Fungsi ini dipanggil saat layar pagi/malam dibuka; idempotent.
+ *
+ * Mengembalikan daftar detail lengkap (baris yang sudah ada + baris hasil seed)
+ * sehingga pemanggil tidak perlu mengambil ulang detail setelah seed.
  */
 export async function seedDetailHariIni(
   rekonsiliasiId: string,
   tanggal: string,
   laukAktif: MasterLauk[],
-): Promise<void> {
+): Promise<DetailStokLengkap[]> {
   const existing = await getDetailByRekonsiliasi(rekonsiliasiId)
   const existingLaukIds = new Set(existing.map((d) => d.lauk_id))
   const perlu = laukAktif.filter((l) => !existingLaukIds.has(l.id))
-  if (perlu.length === 0) return
+  if (perlu.length === 0) return existing
 
   const sumber = await getHariOperasionalTerakhir(tanggal)
   const carryMap = new Map<string, DetailStokHarian>()
@@ -123,8 +126,19 @@ export async function seedDetailHariIni(
     }
   })
 
-  const { error } = await supabase.from('detail_stok_harian').insert(rows)
+  const { data, error } = await supabase
+    .from('detail_stok_harian')
+    .insert(rows)
+    .select()
   if (error) throw error
+
+  const inserted = (data ?? []) as DetailStokHarian[]
+  const laukById = new Map(laukAktif.map((l) => [l.id, l]))
+  const lengkap: DetailStokLengkap[] = inserted.map((d) => ({
+    ...d,
+    lauk: laukById.get(d.lauk_id),
+  }))
+  return [...existing, ...lengkap]
 }
 
 export interface DetailPagiInput {
@@ -220,7 +234,6 @@ export async function siapkanHari(
   if (!rekonsiliasi) {
     rekonsiliasi = await createRekonsiliasi(tanggal)
   }
-  await seedDetailHariIni(rekonsiliasi.id, tanggal, laukAktif)
-  const detail = await getDetailByRekonsiliasi(rekonsiliasi.id)
+  const detail = await seedDetailHariIni(rekonsiliasi.id, tanggal, laukAktif)
   return { rekonsiliasi, detail }
 }

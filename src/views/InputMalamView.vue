@@ -34,8 +34,10 @@ interface RowMalam {
 
 const { data: laukList, isLoading: laukLoading } = useMasterLauk()
 const { data: pengaturan, isLoading: pengaturanLoading } = usePengaturan()
-const hari = useHariIni()
 const { tanggal } = storeToRefs(useHariStore())
+const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active))
+const hari = useHariIni(tanggal, laukAktif)
+const { error: hariError } = hari
 
 const rows = ref<RowMalam[]>([])
 let initialized = false
@@ -44,22 +46,13 @@ const makanSendiri = ref(true)
 const uangLaci = ref<number | null>(null)
 const uangDigital = ref<number | null>(null)
 
-const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active))
-
 watch(
-  laukAktif,
-  (lauk) => {
-    if (lauk.length > 0) {
-      initialized = false
-      hari.muat(tanggal.value, lauk)
-    }
+  hari.detail,
+  (d) => {
+    if (d.length > 0 && !initialized) initRows()
   },
   { immediate: true },
 )
-
-watch(hari.detail, (d) => {
-  if (d.length > 0 && !initialized) initRows()
-})
 
 function initRows() {
   rows.value = hari.detail.value.map((d) => ({
@@ -154,14 +147,13 @@ async function simpan() {
         porsi_konsumsi: makanSendiri.value ? r.konsumsi : 0,
       }
     })
-    await hari.simpanMalam(
+    await hari.simpanMalam.mutateAsync({
       items,
-      uangLaci.value,
-      terimaDigital.value ? uangDigital.value ?? 0 : 0,
-      modalKembalian.value,
-    )
+      uangLaci: uangLaci.value,
+      uangDigital: terimaDigital.value ? uangDigital.value ?? 0 : 0,
+      modalKembalianPakai: modalKembalian.value,
+    })
     initialized = false
-    await hari.muat(tanggal.value, laukAktif.value)
   } catch (e) {
     simpanError.value = pesanError(e)
   } finally {
@@ -175,7 +167,7 @@ async function simpan() {
     <h1 class="text-xl font-bold">Input Malam</h1>
     <p class="text-sm text-zinc-500">Rekonsiliasi mundur — hitung yang terjual hari ini</p>
 
-    <p v-if="hari.error" class="mt-4 text-sm text-red-600">{{ hari.error }}</p>
+    <p v-if="hariError" class="mt-4 text-sm text-red-600">{{ hariError }}</p>
     <p v-if="simpanError" class="mt-4 text-sm text-red-600">{{ simpanError }}</p>
 
     <!-- Status gate -->

@@ -23,28 +23,21 @@ interface RowPagi {
 }
 
 const { data: laukList, isLoading: laukLoading } = useMasterLauk()
-const hari = useHariIni()
 const { tanggal } = storeToRefs(useHariStore())
+const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active))
+const hari = useHariIni(tanggal, laukAktif)
+const { error: hariError } = hari
 
 const rows = ref<RowPagi[]>([])
 let initialized = false
 
-const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active))
-
 watch(
-  laukAktif,
-  (lauk) => {
-    if (lauk.length > 0) {
-      initialized = false
-      hari.muat(tanggal.value, lauk)
-    }
+  hari.detail,
+  (d) => {
+    if (d.length > 0 && !initialized) initRows()
   },
   { immediate: true },
 )
-
-watch(hari.detail, (d) => {
-  if (d.length > 0 && !initialized) initRows()
-})
 
 function initRows() {
   rows.value = hari.detail.value.map((d) => ({
@@ -109,9 +102,8 @@ async function simpan() {
         hpp_baru_porsi: hppBaruPorsi(item),
       }
     })
-    await hari.simpanPagi(items)
+    await hari.simpanPagi.mutateAsync(items)
     initialized = false
-    await hari.muat(tanggal.value, laukAktif.value)
     editMode.value = false
   } catch (e) {
     simpanError.value = pesanError(e)
@@ -128,7 +120,7 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
     <h1 class="text-xl font-bold">Input Stok Pagi</h1>
     <p class="text-sm text-zinc-500">Baseline stok untuk hari ini</p>
 
-    <p v-if="hari.error" class="mt-4 text-sm text-red-600">{{ hari.error }}</p>
+    <p v-if="hariError" class="mt-4 text-sm text-red-600">{{ hariError }}</p>
     <p v-if="simpanError" class="mt-4 text-sm text-red-600">{{ simpanError }}</p>
 
     <div v-if="!adaLaukAktif && !laukLoading" class="mt-8 text-center text-zinc-500">

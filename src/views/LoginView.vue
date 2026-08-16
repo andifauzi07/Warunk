@@ -24,8 +24,8 @@ async function submit() {
 <template>
   <div class="flex min-h-dvh flex-col items-center justify-center px-6">
     <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-sm">
-      <h1 class="text-2xl font-bold text-green-700">WarungKas</h1>
-      <p class="mt-1 text-sm text-zinc-500">Rekonsiliasi Mundur — profit harian warungmu</p>
+      <h1 class="text-2xl font-bold text-green-700">WarunK</h1>
+      <p class="mt-1 text-sm text-zinc-500">Hitung Mundur Stok Penjualan - untung langsung keliatan</p>
 
       <form class="mt-6 flex flex-col gap-4" @submit.prevent="submit">
         <label class="flex flex-col gap-1">

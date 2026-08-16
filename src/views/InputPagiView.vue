@@ -221,7 +221,7 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
             type="number"
             inputmode="numeric"
             min="0"
-            class="w-36 rounded-lg border border-zinc-300 px-3 py-3 text-base text-right tabular-nums"
+            class="w-36 rounded-lg border border-zinc-300 px-3 py-3 text-base text-right no-spinner tabular-nums"
             placeholder="0"
           />
         </label>

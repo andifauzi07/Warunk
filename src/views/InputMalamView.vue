@@ -358,7 +358,7 @@ async function simpan() {
               type="number"
               inputmode="numeric"
               min="0"
-              class="w-32 rounded-lg border border-zinc-300 px-3 py-2 text-base text-right tabular-nums"
+              class="w-32 no-spinner rounded-lg border border-zinc-300 px-3 py-2 text-base text-right tabular-nums"
               placeholder="0"
             />
           </label>
@@ -374,7 +374,7 @@ async function simpan() {
             type="number"
             inputmode="numeric"
             min="0"
-            class="w-40 rounded-lg border border-zinc-300 px-3 py-3 text-base text-right tabular-nums"
+            class="w-40 rounded-lg no-spinner border border-zinc-300 px-3 py-3 text-base text-right tabular-nums"
             placeholder="0"
           />
         </label>
@@ -385,7 +385,7 @@ async function simpan() {
             type="number"
             inputmode="numeric"
             min="0"
-            class="w-40 rounded-lg border border-zinc-300 px-3 py-3 text-base text-right tabular-nums"
+            class="w-40 no-spinner rounded-lg border border-zinc-300 px-3 py-3 text-base text-right tabular-nums"
             placeholder="0"
           />
         </label>

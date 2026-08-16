@@ -27,6 +27,7 @@ watch(
 const pesan = ref('')
 const error = ref('')
 const saving = ref(false)
+const loggingOut = ref(false)
 
 async function simpanSemua() {
   error.value = ''
@@ -52,7 +53,15 @@ async function simpanSemua() {
 }
 
 async function keluar() {
-  await session.logout()
+  error.value = ''
+  loggingOut.value = true
+  try {
+    await session.logout()
+  } catch (e) {
+    error.value = pesanError(e)
+  } finally {
+    loggingOut.value = false
+  }
 }
 </script>
 
@@ -134,9 +143,10 @@ async function keluar() {
       <p class="mt-1 text-sm text-zinc-500">{{ session.user?.email }}</p>
       <button
         @click="keluar"
-        class="mt-3 w-full rounded-xl border border-red-300 px-4 py-3 text-base font-medium text-red-600"
+        :disabled="loggingOut"
+        class="mt-3 w-full rounded-xl border border-red-300 px-4 py-3 text-base font-medium text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        Keluar
+        {{ loggingOut ? 'Keluar…' : 'Keluar' }}
       </button>
     </div>
   </div>

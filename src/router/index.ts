@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useSessionStore } from '@/stores/session'
+import { arahkanKe } from '@/lib/sessionNavigation'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -46,10 +47,7 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const session = useSessionStore()
   await session.waitForSession()
-  if (to.meta.public && session.user) return { name: 'home' }
-  if (to.meta.public) return true
-  if (!session.user) return { name: 'login' }
-  return true
+  return arahkanKe({ user: session.user, route: to }) ?? true
 })
 
 export default router

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { useSessionStore } from '@/stores/session'
+import { useAuthGuard } from '@/composables/useAuthGuard'
 import { useRoute } from 'vue-router'
 
 const session = useSessionStore()
 const route = useRoute()
+
+useAuthGuard()
 
 const navItems = [
   { to: '/', label: 'Beranda', icon: '🏠' },

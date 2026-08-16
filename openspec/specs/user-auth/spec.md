@@ -23,7 +23,7 @@ Sistem SHALL menyediakan autentikasi email/password untuk satu pemilik warung, d
 #### Scenario: Logout
 
 - **WHEN** pengguna menekan tombol logout
-- **THEN** sistem mengakhiri sesi dan mengarahkan ke halaman login
+- **THEN** sistem mengakhiri sesi dan langsung mengarahkan ke halaman login tanpa perlu reload manual halaman
 
 ### Requirement: Keamanan Data Single-Owner
 

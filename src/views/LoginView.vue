@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useSessionStore } from '@/stores/session'
-import { useRouter } from 'vue-router'
 import { ref } from 'vue'
 
 const session = useSessionStore()
-const router = useRouter()
 const email = ref('')
 const password = ref('')
 const error = ref('')
@@ -15,7 +13,6 @@ async function submit() {
   submitting.value = true
   try {
     await session.login(email.value, password.value)
-    router.push('/')
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Login gagal'
   } finally {

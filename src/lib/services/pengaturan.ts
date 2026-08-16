@@ -15,7 +15,7 @@ export async function upsertPengaturan(
 ): Promise<PengaturanWarung> {
   const { data, error } = await supabase
     .from('pengaturan_warung')
-    .upsert(input)
+    .upsert(input, { onConflict: 'user_id' })
     .select()
     .single()
   if (error) throw error

@@ -29,10 +29,18 @@ const error = ref('')
 const saving = ref(false)
 const loggingOut = ref(false)
 
+function keAngka(nilai: unknown): number {
+  if (nilai === '' || nilai === null || nilai === undefined) return 0
+  const n = Number(nilai)
+  return Number.isFinite(n) ? n : 0
+}
+
 async function simpanSemua() {
   error.value = ''
   pesan.value = ''
-  if (form.toleransi_selisih_persen < 0 || form.toleransi_selisih_persen > 100) {
+  const modalKembalian = keAngka(form.modal_kembalian_default)
+  const toleransi = keAngka(form.toleransi_selisih_persen)
+  if (toleransi < 0 || toleransi > 100) {
     error.value = 'Toleransi harus antara 0–100%.'
     return
   }
@@ -40,8 +48,8 @@ async function simpanSemua() {
   try {
     await simpan.mutateAsync({
       user_id: session.user?.id ?? '',
-      modal_kembalian_default: form.modal_kembalian_default ?? 0,
-      toleransi_selisih_persen: form.toleransi_selisih_persen,
+      modal_kembalian_default: modalKembalian,
+      toleransi_selisih_persen: toleransi,
       terima_pembayaran_digital: form.terima_pembayaran_digital,
     })
     pesan.value = 'Pengaturan tersimpan.'

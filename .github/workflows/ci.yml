@@ -3,11 +3,13 @@ name: CI
 on:
   push:
     branches:
-      - main
-    branches-ignore:
-      - 'dependabot/**'
+      - '**'
+      - '!main'
+      - '!dependabot/**'
   pull_request:
-
+    branches: 
+      - main
+      
 jobs:
   lint:
     name: Lint

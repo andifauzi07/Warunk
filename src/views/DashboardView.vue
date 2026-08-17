@@ -6,6 +6,7 @@ import { useHariStore } from '@/stores/hari'
 import { useAnalitik } from '@/composables/useAnalitik'
 import { statusSelisih } from '@/lib/engine'
 import { formatAngka, formatRupiah, pesanError, tambahHari } from '@/lib/format'
+import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue'
 import type { StatusHarian } from '@/types/database'
 
 const { tanggal } = storeToRefs(useHariStore())
@@ -166,37 +167,15 @@ const seringRusak = computed(() =>
       </p>
 
       <template v-else>
-        <div class="mt-3 flex flex-col gap-1.5 text-sm">
-          <div class="flex justify-between">
-            <span>Pendapatan estimasi</span>
-            <span class="font-semibold tabular-nums">{{ formatRupiah(ringkasan.total_pendapatan_estimasi) }}</span>
-          </div>
-          <div class="flex justify-between text-zinc-600">
-            <span>─ tunai</span>
-            <span class="tabular-nums">{{ formatRupiah(ringkasan.total_pendapatan_estimasi - ringkasan.total_uang_digital) }}</span>
-          </div>
-          <div class="flex justify-between text-zinc-600">
-            <span>─ digital</span>
-            <span class="tabular-nums">{{ formatRupiah(ringkasan.total_uang_digital) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>HPP nyata</span>
-            <span class="tabular-nums">{{ formatRupiah(ringkasan.total_hpp_nyata) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Kerugian (basi/rusak)</span>
-            <span class="tabular-nums">{{ formatRupiah(ringkasan.total_kerugian) }}</span>
-          </div>
-          <div class="flex justify-between border-t border-zinc-200 pt-2">
-            <span class="font-semibold">Keuntungan bersih</span>
-            <span
-              class="angka-besar"
-              :class="ringkasan.keuntungan_bersih >= 0 ? 'text-green-700' : 'text-red-600'"
-            >
-              {{ formatRupiah(ringkasan.keuntungan_bersih) }}
-            </span>
-          </div>
-        </div>
+        <RingkasanHarianCard
+          class="mt-3"
+          :pendapatan="ringkasan.total_pendapatan_estimasi"
+          :uang-digital="ringkasan.total_uang_digital"
+          :hpp-nyata="ringkasan.total_hpp_nyata"
+          :kerugian="ringkasan.total_kerugian"
+          :profit="ringkasan.keuntungan_bersih"
+          show-digital
+        />
 
         <div class="mt-3 rounded-xl border p-3" :class="levelSelisih === 'aman' ? 'border-green-200 bg-green-50' : levelSelisih === 'waspada' ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50'">
           <div class="flex items-center justify-between">

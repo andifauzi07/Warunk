@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import * as svc from '@/lib/services/masterLauk'
+import { QUERY_DEFAULTS } from '@/lib/queryConfig'
 import type { MasterLauk } from '@/types/database'
 
 const KEY = ['master-lauk']
@@ -15,8 +16,7 @@ export function useMasterLauk() {
   const q = useQuery({
     queryKey: KEY,
     queryFn: svc.fetchMasterLauk,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    ...QUERY_DEFAULTS,
   })
 
   const tambah = useMutation({

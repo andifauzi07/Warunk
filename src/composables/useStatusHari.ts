@@ -1,6 +1,7 @@
 import { computed, type Ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import * as svc from '@/lib/services/rekonsiliasi'
+import { QUERY_DEFAULTS } from '@/lib/queryConfig'
 
 export const statusHariKey = (tanggal: string) => ['hari-status', tanggal] as const
 
@@ -23,7 +24,7 @@ export function useStatusHari(tanggal: Ref<string>) {
   const q = useQuery({
     queryKey: computed(() => statusHariKey(tanggal.value)),
     queryFn: () => getOrCreateRekonsiliasi(tanggal.value),
-    staleTime: 5 * 60 * 1000,
+    ...QUERY_DEFAULTS,
   })
 
   const tandaiLibur = useMutation({

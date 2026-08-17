@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useMasterLauk } from '@/composables/useMasterLauk'
-import { useHariIni } from '@/composables/useHariIni'
+import { useDetailRows } from '@/composables/useDetailRows'
 import { usePengaturan } from '@/composables/usePengaturan'
 import { useHariStore } from '@/stores/hari'
 import Stepper from '@/components/Stepper.vue'
+import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue'
 import {
   hitungAgregat,
   hppBaruPorsi,
@@ -15,84 +15,29 @@ import {
 } from '@/lib/engine'
 import type { ItemKalkulasi } from '@/lib/engine'
 import { formatRupiah, pesanError } from '@/lib/format'
+import type { RowDetail } from '@/composables/useDetailRows'
 
-interface RowMalam {
-  id: string
-  laukId: string
-  namaLauk: string
-  hargaJualPorsi: number
-  hppEstimasi: number
-  porsiCarryOver: number
-  hppCarryOver: number
-  basiPagi: number
-  porsiBaru: number
-  modalBaru: number
-  sisaLayak: number
-  rusakMalam: number
-  konsumsi: number
-}
-
-const { data: laukList, isLoading: laukLoading } = useMasterLauk()
-const { data: pengaturan, isLoading: pengaturanLoading } = usePengaturan()
 const { tanggal } = storeToRefs(useHariStore())
-const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active))
-const hari = useHariIni(tanggal, laukAktif)
-const { error: hariError } = hari
-
-const rows = ref<RowMalam[]>([])
-let initialized = false
+const { rows, hariError, laukLoading, laukAktif, hari, toItemKalkulasi, resetInitialized } = useDetailRows(tanggal)
+const { data: pengaturan, isLoading: pengaturanLoading } = usePengaturan()
 
 const makanSendiri = ref(true)
 const uangLaci = ref<number | null>(null)
 const uangDigital = ref<number | null>(null)
 
-watch(
-  hari.detail,
-  (d) => {
-    if (d.length > 0 && !initialized) initRows()
-  },
-  { immediate: true },
-)
-
-function initRows() {
-  rows.value = hari.detail.value.map((d) => ({
-    id: d.id,
-    laukId: d.lauk_id,
-    namaLauk: d.lauk?.nama_lauk ?? 'Lauk',
-    hargaJualPorsi: d.lauk?.harga_jual_porsi ?? 0,
-    hppEstimasi: d.lauk?.hpp_estimasi_porsi ?? 0,
-    porsiCarryOver: d.porsi_carry_over,
-    hppCarryOver: d.hpp_carry_over_porsi,
-    basiPagi: d.porsi_basi_pagi,
-    porsiBaru: d.porsi_baru_dimasak,
-    modalBaru: d.modal_baru_total,
-    sisaLayak: d.porsi_sisa_layak_jual,
-    rusakMalam: d.porsi_rusak_malam,
-    konsumsi: d.porsi_konsumsi,
-  }))
-  initialized = true
-}
-
-function itemKalkulasi(r: RowMalam): ItemKalkulasi {
-  return {
-    porsi_carry_over: r.porsiCarryOver,
-    hpp_carry_over_porsi: r.hppCarryOver,
-    porsi_basi_pagi: r.basiPagi,
-    porsi_baru_dimasak: r.porsiBaru,
-    modal_baru_total: r.modalBaru,
-    porsi_sisa_layak_jual: r.sisaLayak,
-    porsi_rusak_malam: r.rusakMalam,
-    porsi_konsumsi: makanSendiri.value ? r.konsumsi : 0,
-    harga_jual_porsi: r.hargaJualPorsi,
-    hpp_estimasi_porsi: r.hppEstimasi,
+function itemKalkulasi(r: RowDetail): ItemKalkulasi {
+  const base = toItemKalkulasi(r)
+  if (!makanSendiri.value) {
+    return { ...base, porsi_konsumsi: 0 }
   }
+  return base
 }
 
-function stokAktif(r: RowMalam): number {
+function stokAktif(r: RowDetail): number {
   return stokAktifAwal(itemKalkulasi(r))
 }
 
-function validRow(r: RowMalam): boolean {
+function validRow(r: RowDetail): boolean {
   return r.sisaLayak + r.rusakMalam + (makanSendiri.value ? r.konsumsi : 0) <= stokAktif(r)
 }
 
@@ -153,7 +98,7 @@ async function simpan() {
       uangDigital: terimaDigital.value ? uangDigital.value ?? 0 : 0,
       modalKembalianPakai: modalKembalian.value,
     })
-    initialized = false
+    resetInitialized()
   } catch (e) {
     simpanError.value = pesanError(e)
   } finally {
@@ -186,48 +131,17 @@ async function simpan() {
         <p class="mt-0.5 text-sm">Hari ini terkunci — data tidak dapat diubah lagi.</p>
       </div>
 
-      <div class="rounded-xl bg-white p-4 shadow-sm">
-        <p class="text-sm font-medium text-zinc-500">Ringkasan Hari Ini</p>
-        <div class="mt-2 flex flex-col gap-1.5 text-sm">
-          <div class="flex justify-between">
-            <span>Pendapatan estimasi</span>
-            <span class="font-semibold tabular-nums">{{ formatRupiah(rek?.total_pendapatan_estimasi ?? 0) }}</span>
-          </div>
-          <div class="flex justify-between text-zinc-600">
-            <span>─ dari digital</span>
-            <span class="tabular-nums">{{ formatRupiah(rek?.total_uang_digital ?? 0) }}</span>
-          </div>
-          <div class="flex justify-between text-zinc-600">
-            <span>─ tunai diharapkan</span>
-            <span class="tabular-nums">{{ formatRupiah((rek?.total_pendapatan_estimasi ?? 0) - (rek?.total_uang_digital ?? 0)) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>HPP nyata</span>
-            <span class="font-semibold tabular-nums">{{ formatRupiah(rek?.total_hpp_nyata ?? 0) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Kerugian (basi/rusak)</span>
-            <span class="font-semibold tabular-nums">{{ formatRupiah(rek?.total_kerugian ?? 0) }}</span>
-          </div>
-          <div class="flex justify-between border-t border-zinc-200 pt-1.5">
-            <span>Keuntungan bersih</span>
-            <span class="angka-besar text-green-700">{{ formatRupiah(rek?.keuntungan_bersih ?? 0) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Uang di laci (net)</span>
-            <span class="tabular-nums">{{ formatRupiah((rek?.total_uang_laci ?? 0) - (rek?.modal_kembalian_pakai ?? 0)) }}</span>
-          </div>
-          <div class="flex justify-between border-t border-zinc-200 pt-1.5">
-            <span>Selisih kas</span>
-            <span
-              class="font-bold tabular-nums"
-              :class="(rek?.selisih_kas ?? 0) === 0 ? 'text-green-700' : (rek?.selisih_kas ?? 0) > 0 ? 'text-amber-600' : 'text-red-600'"
-            >
-              {{ formatRupiah(rek?.selisih_kas ?? 0) }}
-            </span>
-          </div>
-        </div>
-      </div>
+      <RingkasanHarianCard
+        :pendapatan="rek?.total_pendapatan_estimasi ?? 0"
+        :uang-digital="rek?.total_uang_digital ?? 0"
+        :hpp-nyata="rek?.total_hpp_nyata ?? 0"
+        :kerugian="rek?.total_kerugian ?? 0"
+        :profit="rek?.keuntungan_bersih ?? 0"
+        :uang-laci="(rek?.total_uang_laci ?? 0) - (rek?.modal_kembalian_pakai ?? 0)"
+        :modal-kembalian="0"
+        :selisih-kas="rek?.selisih_kas ?? 0"
+        show-digital
+      />
 
       <div v-for="row in rows" :key="row.id" class="rounded-xl border border-zinc-200 bg-white p-4">
         <div class="flex items-center justify-between">
@@ -260,48 +174,17 @@ async function simpan() {
     </div>
 
     <div v-else-if="status === 'pagi_selesai' && rows.length > 0" class="mt-4">
-      <div class="rounded-xl bg-white p-4 shadow-sm">
-        <p class="text-sm font-medium text-zinc-500">Ringkasan Hari Ini</p>
-        <div class="mt-2 flex flex-col gap-1.5 text-sm">
-          <div class="flex justify-between">
-            <span>Pendapatan estimasi</span>
-            <span class="font-semibold tabular-nums">{{ formatRupiah(agregat.pendapatan) }}</span>
-          </div>
-          <div class="flex justify-between text-zinc-600">
-            <span>─ dari digital</span>
-            <span class="tabular-nums">{{ formatRupiah(terimaDigital ? uangDigital ?? 0 : 0) }}</span>
-          </div>
-          <div class="flex justify-between text-zinc-600">
-            <span>─ tunai diharapkan</span>
-            <span class="tabular-nums">{{ formatRupiah(agregat.pendapatan - (terimaDigital ? uangDigital ?? 0 : 0)) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>HPP nyata</span>
-            <span class="font-semibold tabular-nums">{{ formatRupiah(agregat.hppNyata) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Kerugian (basi/rusak)</span>
-            <span class="font-semibold tabular-nums">{{ formatRupiah(agregat.kerugian) }}</span>
-          </div>
-          <div class="flex justify-between border-t border-zinc-200 pt-1.5">
-            <span>Keuntungan bersih</span>
-            <span class="angka-besar text-green-700">{{ formatRupiah(agregat.profit) }}</span>
-          </div>
-          <div class="flex justify-between">
-            <span>Uang di laci (net)</span>
-            <span class="tabular-nums">{{ formatRupiah((uangLaci ?? 0) - modalKembalian) }}</span>
-          </div>
-          <div class="flex justify-between border-t border-zinc-200 pt-1.5">
-            <span>Selisih kas</span>
-            <span
-              class="font-bold tabular-nums"
-              :class="selisih === 0 ? 'text-green-700' : selisih > 0 ? 'text-amber-600' : 'text-red-600'"
-            >
-              {{ formatRupiah(selisih) }}
-            </span>
-          </div>
-        </div>
-      </div>
+      <RingkasanHarianCard
+        :pendapatan="agregat.pendapatan"
+        :uang-digital="terimaDigital ? uangDigital ?? 0 : 0"
+        :hpp-nyata="agregat.hppNyata"
+        :kerugian="agregat.kerugian"
+        :profit="agregat.profit"
+        :uang-laci="(uangLaci ?? 0) - modalKembalian"
+        :modal-kembalian="0"
+        :selisih-kas="selisih"
+        show-digital
+      />
 
       <!-- Toggle makan sendiri -->
       <button

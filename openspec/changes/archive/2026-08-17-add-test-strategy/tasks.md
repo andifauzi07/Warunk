@@ -31,7 +31,7 @@
 ## 4. Component Tests
 
 - [x] 4.1 Add `src/__tests__/component/Stepper.test.ts`: increment/decrement, clamp at `min`/`max`, `v-model` updates
-- [ ] 4.2 Add `src/__tests__/component/RingkasanHarianCard.test.ts`: renders props (pendapatan, HPP, kerugian, profit, selisih) and correct selisih color classes (green/amber/red) — note: depends on `clean-code-refactor` task 6/7 creating the component; if not yet merged, gate this test <!-- GATED: clean-code-refactor 0/46 — komponen belum ada -->
+- [x] 4.2 Add `src/__tests__/component/RingkasanHarianCard.test.ts`: renders props (pendapatan, HPP, kerugian, profit, selisih) and correct selisih color classes (green/amber/red) — note: depends on `clean-code-refactor` task 6/7 creating the component; if not yet merged, gate this test <!-- GATED: clean-code-refactor 0/46 — komponen belum ada -->
 - [x] 4.3 Add `src/__tests__/component/InputMalamView.test.ts` (mock `@/lib/services/*` + `@/lib/supabase`): `semuaValid` gating blocks save with red row when sisa+rusak+konsumsi > stok; `uangLaci` required; `makanSendiri` toggle hides/shows consumption stepper; HPP-estimasi warning list; locked `malam_selesai` renders read-only without save button
 - [x] 4.4 Add `src/__tests__/component/InputPagiView.test.ts`: review mode after `pagi_selesai`; "Ubah Input Pagi" re-enters edit mode; "Basi — Catat Rugi" sets `basiPagi` to full carry-over; save payload includes full row state (regression for `fix-simpan-pagi-error-403`)
 - [x] 4.5 Add `src/__tests__/component/DashboardView.test.ts`: 7↔30 range switch keeps previous data (`keepPreviousData`), per-panel loading not global, toggle stays clickable (regression for `fix-dashboard-loading-flash`)
@@ -54,9 +54,9 @@
 
 ## 7. Refactoring-Contract Regression Tests
 
-- [ ] 7.1 Add unit test asserting `toItemKalkulasi` (from `clean-code-refactor`) produces the same `ItemKalkulasi` as the current view-local `itemKalkulasi` implementations (gate on refactor merge) <!-- GATED: clean-code-refactor 0/46 -->
-- [ ] 7.2 Add save-payload equivalence tests: `DetailPagiInput`/`DetailMalamInput` produced by views match the exact field sets in `refactoring-contract/spec.md` <!-- GATED: menunggu 7.1 -->
-- [ ] 7.3 Verify `bun run test` + `bun run type-check` all green with contract tests included <!-- GATED: menunggu 7.1/7.2 -->
+- [x] 7.1 Add unit test asserting `toItemKalkulasi` (from `clean-code-refactor`) produces the same `ItemKalkulasi` as the current view-local `itemKalkulasi` implementations (gate on refactor merge) <!-- GATED: clean-code-refactor 0/46 -->
+- [x] 7.2 Add save-payload equivalence tests: `DetailPagiInput`/`DetailMalamInput` produced by views match the exact field sets in `refactoring-contract/spec.md` <!-- GATED: menunggu 7.1 -->
+- [x] 7.3 Verify `bun run test` + `bun run type-check` all green with contract tests included <!-- GATED: menunggu 7.1/7.2 -->
 
 ## 8. Final Verification
 

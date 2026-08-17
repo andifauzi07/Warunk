@@ -1,80 +1,21 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useMasterLauk } from '@/composables/useMasterLauk'
-import { useHariIni } from '@/composables/useHariIni'
+import { useDetailRows } from '@/composables/useDetailRows'
 import { useHariStore } from '@/stores/hari'
 import Stepper from '@/components/Stepper.vue'
 import { hppBaruPorsi, stokAktifAwal } from '@/lib/engine'
-import type { ItemKalkulasi } from '@/lib/engine'
 import { formatRupiah, pesanError } from '@/lib/format'
+import type { RowDetail } from '@/composables/useDetailRows'
 
-interface RowPagi {
-  id: string
-  laukId: string
-  namaLauk: string
-  hargaJualPorsi: number
-  hppEstimasi: number
-  porsiCarryOver: number
-  hppCarryOver: number
-  basiPagi: number
-  porsiBaru: number
-  modalBaru: number
-}
-
-const { data: laukList, isLoading: laukLoading } = useMasterLauk()
 const { tanggal } = storeToRefs(useHariStore())
-const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active))
-const hari = useHariIni(tanggal, laukAktif)
-const { error: hariError } = hari
+const { rows, hariError, laukLoading, laukAktif, hari, toItemKalkulasi, resetInitialized } = useDetailRows(tanggal)
 
-const rows = ref<RowPagi[]>([])
-let initialized = false
-
-watch(
-  hari.detail,
-  (d) => {
-    if (d.length > 0 && !initialized) initRows()
-  },
-  { immediate: true },
-)
-
-function initRows() {
-  rows.value = hari.detail.value.map((d) => ({
-    id: d.id,
-    laukId: d.lauk_id,
-    namaLauk: d.lauk?.nama_lauk ?? 'Lauk',
-    hargaJualPorsi: d.lauk?.harga_jual_porsi ?? 0,
-    hppEstimasi: d.lauk?.hpp_estimasi_porsi ?? 0,
-    porsiCarryOver: d.porsi_carry_over,
-    hppCarryOver: d.hpp_carry_over_porsi,
-    basiPagi: d.porsi_basi_pagi,
-    porsiBaru: d.porsi_baru_dimasak,
-    modalBaru: d.modal_baru_total,
-  }))
-  initialized = true
-}
-
-function itemKalkulasi(r: RowPagi): ItemKalkulasi {
-  return {
-    porsi_carry_over: r.porsiCarryOver,
-    hpp_carry_over_porsi: r.hppCarryOver,
-    porsi_basi_pagi: r.basiPagi,
-    porsi_baru_dimasak: r.porsiBaru,
-    modal_baru_total: r.modalBaru,
-    porsi_sisa_layak_jual: 0,
-    porsi_rusak_malam: 0,
-    porsi_konsumsi: 0,
-    harga_jual_porsi: r.hargaJualPorsi,
-    hpp_estimasi_porsi: r.hppEstimasi,
-  }
-}
-
-function tandaiLayak(r: RowPagi) {
+function tandaiLayak(r: RowDetail) {
   r.basiPagi = 0
 }
 
-function tandaiBasi(r: RowPagi) {
+function tandaiBasi(r: RowDetail) {
   r.basiPagi = r.porsiCarryOver
 }
 
@@ -90,7 +31,7 @@ async function simpan() {
   simpanLoading.value = true
   try {
     const items = rows.value.map((r) => {
-      const item = itemKalkulasi(r)
+      const item = toItemKalkulasi(r)
       return {
         id: r.id,
         lauk_id: r.laukId,
@@ -103,7 +44,7 @@ async function simpan() {
       }
     })
     await hari.simpanPagi.mutateAsync(items)
-    initialized = false
+    resetInitialized()
     editMode.value = false
   } catch (e) {
     simpanError.value = pesanError(e)
@@ -153,7 +94,7 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
             <span>Modal: <strong>{{ formatRupiah(row.modalBaru) }}</strong></span>
           </div>
           <div class="mt-2 border-t border-dashed border-zinc-200 pt-2 text-sm text-zinc-600">
-            Stok aktif hari ini: <strong>{{ stokAktifAwal(itemKalkulasi(row)) }} porsi</strong>
+            Stok aktif hari ini: <strong>{{ stokAktifAwal(toItemKalkulasi(row)) }} porsi</strong>
           </div>
         </div>
       </div>
@@ -227,7 +168,7 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
         </label>
 
         <div class="mt-3 border-t border-dashed border-zinc-200 pt-2 text-sm text-zinc-600">
-          Stok aktif hari ini: <strong>{{ stokAktifAwal(itemKalkulasi(row)) }} porsi</strong>
+          Stok aktif hari ini: <strong>{{ stokAktifAwal(toItemKalkulasi(row)) }} porsi</strong>
         </div>
       </div>
 

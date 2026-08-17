@@ -1,6 +1,7 @@
 import { computed, type Ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import * as svc from '@/lib/services/rekonsiliasi'
+import { QUERY_DEFAULTS } from '@/lib/queryConfig'
 import type {
   DetailStokLengkap,
   MasterLauk,
@@ -20,7 +21,7 @@ export function useHariIni(
     queryKey: key,
     queryFn: () => svc.siapkanHari(tanggal.value, laukAktif.value),
     enabled: computed(() => laukAktif.value.length > 0),
-    staleTime: 5 * 60 * 1000,
+    ...QUERY_DEFAULTS,
   })
 
   const invalidateHari = () => {

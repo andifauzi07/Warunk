@@ -2,7 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    branches-ignore:
+      - 'dependabot/**'
   pull_request:
 
 jobs:
@@ -10,7 +13,7 @@ jobs:
     name: Unit & Component
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6 
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -19,3 +22,31 @@ jobs:
         run: bun run type-check
       - name: Unit & component tests
         run: bun run test
+  automerge:
+    name: Auto Create & Merge PR
+    needs: unit-component
+    if: github.event_name == 'push' && github.ref_name != 'main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: ${{ github.ref_name }}
+          title: "Auto PR: ${{ github.ref_name }}"
+          body: "PR ini dibuat otomatis oleh GitHub Actions setelah unit test berhasil."
+          base: main
+
+      - name: Enable Auto-Merge
+        if: steps.create_pr.outputs.pull-request-number != ''
+        run: |
+          gh pr merge ${{ steps.create_pr.outputs.pull-request-number }} --auto --merge
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

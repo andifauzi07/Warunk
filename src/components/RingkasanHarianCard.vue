@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { formatRupiah } from '@/lib/format'
+import { computed } from 'vue';
+import { formatRupiah } from '@/lib/format';
 
 interface Props {
-  pendapatan: number
-  uangDigital?: number
-  hppNyata: number
-  kerugian: number
-  profit: number
-  uangLaci?: number
-  modalKembalian?: number
-  selisihKas?: number
-  showDigital?: boolean
+  pendapatan: number;
+  uangDigital?: number;
+  hppNyata: number;
+  kerugian: number;
+  profit: number;
+  uangLaci?: number;
+  modalKembalian?: number;
+  selisihKas?: number;
+  showDigital?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -20,18 +20,18 @@ const props = withDefaults(defineProps<Props>(), {
   modalKembalian: 0,
   selisihKas: 0,
   showDigital: false,
-})
+});
 
-const tunai = computed(() => props.pendapatan - (props.showDigital ? props.uangDigital : 0))
+const tunai = computed(() => props.pendapatan - (props.showDigital ? props.uangDigital : 0));
 
 const selisihColor = computed(() => {
-  if (props.selisihKas === 0) return 'text-green-700'
-  return props.selisihKas > 0 ? 'text-amber-600' : 'text-red-600'
-})
+  if (props.selisihKas === 0) return 'text-green-700';
+  return props.selisihKas > 0 ? 'text-amber-600' : 'text-red-600';
+});
 
 const profitColor = computed(() => {
-  return props.profit >= 0 ? 'text-green-700' : 'text-red-600'
-})
+  return props.profit >= 0 ? 'text-green-700' : 'text-red-600';
+});
 </script>
 
 <template>
@@ -68,7 +68,9 @@ const profitColor = computed(() => {
       </div>
       <div class="flex justify-between border-t border-zinc-200 pt-1.5">
         <span>Keuntungan bersih</span>
-        <span class="angka-besar font-semibold" :class="profitColor">{{ formatRupiah(profit) }}</span>
+        <span class="angka-besar font-semibold" :class="profitColor">{{
+          formatRupiah(profit)
+        }}</span>
       </div>
       <template v-if="uangLaci !== undefined && modalKembalian !== undefined">
         <div class="flex justify-between">

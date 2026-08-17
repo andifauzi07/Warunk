@@ -1,37 +1,38 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useDetailRows } from '@/composables/useDetailRows'
-import { useHariStore } from '@/stores/hari'
-import Stepper from '@/components/Stepper.vue'
-import { hppBaruPorsi, stokAktifAwal } from '@/lib/engine'
-import { formatRupiah, pesanError } from '@/lib/format'
-import type { RowDetail } from '@/composables/useDetailRows'
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useDetailRows } from '@/composables/useDetailRows';
+import { useHariStore } from '@/stores/hari';
+import Stepper from '@/components/Stepper.vue';
+import { hppBaruPorsi, stokAktifAwal } from '@/lib/engine';
+import { formatRupiah, pesanError } from '@/lib/format';
+import type { RowDetail } from '@/composables/useDetailRows';
 
-const { tanggal } = storeToRefs(useHariStore())
-const { rows, hariError, laukLoading, laukAktif, hari, toItemKalkulasi, resetInitialized } = useDetailRows(tanggal)
+const { tanggal } = storeToRefs(useHariStore());
+const { rows, hariError, laukLoading, laukAktif, hari, toItemKalkulasi, resetInitialized } =
+  useDetailRows(tanggal);
 
 function tandaiLayak(r: RowDetail) {
-  r.basiPagi = 0
+  r.basiPagi = 0;
 }
 
 function tandaiBasi(r: RowDetail) {
-  r.basiPagi = r.porsiCarryOver
+  r.basiPagi = r.porsiCarryOver;
 }
 
-const terkunci = computed(() => hari.rekonsiliasi.value?.status === 'malam_selesai')
-const sudahSelesaiPagi = computed(() => hari.rekonsiliasi.value?.status === 'pagi_selesai')
-const editMode = ref(false)
-const tampilReview = computed(() => sudahSelesaiPagi.value && !editMode.value)
-const simpanError = ref('')
-const simpanLoading = ref(false)
+const terkunci = computed(() => hari.rekonsiliasi.value?.status === 'malam_selesai');
+const sudahSelesaiPagi = computed(() => hari.rekonsiliasi.value?.status === 'pagi_selesai');
+const editMode = ref(false);
+const tampilReview = computed(() => sudahSelesaiPagi.value && !editMode.value);
+const simpanError = ref('');
+const simpanLoading = ref(false);
 
 async function simpan() {
-  simpanError.value = ''
-  simpanLoading.value = true
+  simpanError.value = '';
+  simpanLoading.value = true;
   try {
     const items = rows.value.map((r) => {
-      const item = toItemKalkulasi(r)
+      const item = toItemKalkulasi(r);
       return {
         id: r.id,
         lauk_id: r.laukId,
@@ -41,19 +42,19 @@ async function simpan() {
         porsi_baru_dimasak: r.porsiBaru,
         modal_baru_total: r.modalBaru,
         hpp_baru_porsi: hppBaruPorsi(item),
-      }
-    })
-    await hari.simpanPagi.mutateAsync(items)
-    resetInitialized()
-    editMode.value = false
+      };
+    });
+    await hari.simpanPagi.mutateAsync(items);
+    resetInitialized();
+    editMode.value = false;
   } catch (e) {
-    simpanError.value = pesanError(e)
+    simpanError.value = pesanError(e);
   } finally {
-    simpanLoading.value = false
+    simpanLoading.value = false;
   }
 }
 
-const adaLaukAktif = computed(() => laukAktif.value.length > 0)
+const adaLaukAktif = computed(() => laukAktif.value.length > 0);
 </script>
 
 <template>
@@ -70,7 +71,10 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
 
     <!-- Mode terkunci / ringkasan -->
     <div v-else-if="terkunci || tampilReview" class="mt-4 flex flex-col gap-3">
-      <div v-if="terkunci" class="rounded-xl border border-zinc-300 bg-zinc-100 p-4 text-center text-zinc-600">
+      <div
+        v-if="terkunci"
+        class="rounded-xl border border-zinc-300 bg-zinc-100 p-4 text-center text-zinc-600"
+      >
         Hari ini sudah terkunci (input malam selesai). Tidak bisa mengubah input pagi.
       </div>
       <div v-else class="rounded-xl bg-green-50 p-4 text-green-800">
@@ -88,10 +92,18 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
             <p class="text-sm text-zinc-500">{{ formatRupiah(row.hargaJualPorsi) }}/porsi</p>
           </div>
           <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-600">
-            <span v-if="row.porsiCarryOver > 0">Sisa kemarin: <strong>{{ row.porsiCarryOver }}</strong> porsi</span>
-            <span v-if="row.basiPagi > 0" class="text-red-600">Basi: <strong>{{ row.basiPagi }}</strong> porsi</span>
-            <span>Masak baru: <strong>{{ row.porsiBaru }}</strong> porsi</span>
-            <span>Modal: <strong>{{ formatRupiah(row.modalBaru) }}</strong></span>
+            <span v-if="row.porsiCarryOver > 0"
+              >Sisa kemarin: <strong>{{ row.porsiCarryOver }}</strong> porsi</span
+            >
+            <span v-if="row.basiPagi > 0" class="text-red-600"
+              >Basi: <strong>{{ row.basiPagi }}</strong> porsi</span
+            >
+            <span
+              >Masak baru: <strong>{{ row.porsiBaru }}</strong> porsi</span
+            >
+            <span
+              >Modal: <strong>{{ formatRupiah(row.modalBaru) }}</strong></span
+            >
           </div>
           <div class="mt-2 border-t border-dashed border-zinc-200 pt-2 text-sm text-zinc-600">
             Stok aktif hari ini: <strong>{{ stokAktifAwal(toItemKalkulasi(row)) }} porsi</strong>
@@ -101,8 +113,8 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
 
       <button
         v-if="!terkunci"
-        @click="editMode = true"
         class="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base font-medium text-zinc-700 active:bg-zinc-100"
+        @click="editMode = true"
       >
         Ubah Input Pagi
       </button>
@@ -110,11 +122,7 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
 
     <!-- Mode input -->
     <div v-else class="mt-4 flex flex-col gap-3">
-      <div
-        v-for="row in rows"
-        :key="row.id"
-        class="rounded-xl border border-zinc-200 bg-white p-4"
-      >
+      <div v-for="row in rows" :key="row.id" class="rounded-xl border border-zinc-200 bg-white p-4">
         <div class="flex items-center justify-between">
           <p class="font-semibold">{{ row.namaLauk }}</p>
           <p class="text-sm text-zinc-500">{{ formatRupiah(row.hargaJualPorsi) }}/porsi</p>
@@ -123,21 +131,27 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
         <!-- Carry-over -->
         <div v-if="row.porsiCarryOver > 0" class="mt-3 rounded-lg bg-zinc-50 p-3">
           <p class="text-sm text-zinc-600">
-            Sisa kemarin: <strong>{{ row.porsiCarryOver }} porsi</strong>
-            (HPP {{ formatRupiah(row.hppCarryOver) }})
+            Sisa kemarin: <strong>{{ row.porsiCarryOver }} porsi</strong> (HPP
+            {{ formatRupiah(row.hppCarryOver) }})
           </p>
           <div class="mt-2 flex gap-2">
             <button
-              @click="tandaiLayak(row)"
               class="flex-1 rounded-lg px-3 py-3 text-sm font-semibold"
-              :class="row.basiPagi === 0 ? 'bg-green-600 text-white' : 'border border-zinc-300 text-zinc-700'"
+              :class="
+                row.basiPagi === 0
+                  ? 'bg-green-600 text-white'
+                  : 'border border-zinc-300 text-zinc-700'
+              "
+              @click="tandaiLayak(row)"
             >
               ✓ Masih Layak Jual
             </button>
             <button
-              @click="tandaiBasi(row)"
               class="flex-1 rounded-lg px-3 py-3 text-sm font-semibold"
-              :class="row.basiPagi > 0 ? 'bg-red-600 text-white' : 'border border-zinc-300 text-zinc-700'"
+              :class="
+                row.basiPagi > 0 ? 'bg-red-600 text-white' : 'border border-zinc-300 text-zinc-700'
+              "
+              @click="tandaiBasi(row)"
             >
               ✗ Basi — Catat Rugi
             </button>
@@ -162,7 +176,7 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
             type="number"
             inputmode="numeric"
             min="0"
-            class="w-36 rounded-lg border border-zinc-300 px-3 py-3 text-base text-right no-spinner tabular-nums"
+            class="no-spinner w-36 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
             placeholder="0"
           />
         </label>
@@ -174,9 +188,9 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0)
 
       <button
         v-if="rows.length > 0 && !terkunci"
-        @click="simpan"
         :disabled="simpanLoading"
         class="mt-2 rounded-xl bg-green-600 px-4 py-4 text-base font-bold text-white active:bg-green-700"
+        @click="simpan"
       >
         {{ simpanLoading ? 'Menyimpan…' : 'Selesai Input Pagi' }}
       </button>

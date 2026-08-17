@@ -1,83 +1,89 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useDetailRows } from '@/composables/useDetailRows'
-import { usePengaturan } from '@/composables/usePengaturan'
-import { useHariStore } from '@/stores/hari'
-import Stepper from '@/components/Stepper.vue'
-import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue'
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useDetailRows } from '@/composables/useDetailRows';
+import { usePengaturan } from '@/composables/usePengaturan';
+import { useHariStore } from '@/stores/hari';
+import Stepper from '@/components/Stepper.vue';
+import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue';
 import {
   hitungAgregat,
   hppBaruPorsi,
   porsiDikonsumsi,
   selisihKas,
   stokAktifAwal,
-} from '@/lib/engine'
-import type { ItemKalkulasi } from '@/lib/engine'
-import { formatRupiah, pesanError } from '@/lib/format'
-import type { RowDetail } from '@/composables/useDetailRows'
+} from '@/lib/engine';
+import type { ItemKalkulasi } from '@/lib/engine';
+import { formatRupiah, pesanError } from '@/lib/format';
+import type { RowDetail } from '@/composables/useDetailRows';
 
-const { tanggal } = storeToRefs(useHariStore())
-const { rows, hariError, laukLoading, laukAktif, hari, toItemKalkulasi, resetInitialized } = useDetailRows(tanggal)
-const { data: pengaturan, isLoading: pengaturanLoading } = usePengaturan()
+const { tanggal } = storeToRefs(useHariStore());
+const { rows, hariError, laukLoading, hari, toItemKalkulasi, resetInitialized } =
+  useDetailRows(tanggal);
+const { data: pengaturan, isLoading: pengaturanLoading } = usePengaturan();
 
-const makanSendiri = ref(true)
-const uangLaci = ref<number | null>(null)
-const uangDigital = ref<number | null>(null)
+const makanSendiri = ref(true);
+const uangLaci = ref<number | null>(null);
+const uangDigital = ref<number | null>(null);
 
 function itemKalkulasi(r: RowDetail): ItemKalkulasi {
-  const base = toItemKalkulasi(r)
+  const base = toItemKalkulasi(r);
   if (!makanSendiri.value) {
-    return { ...base, porsi_konsumsi: 0 }
+    return { ...base, porsi_konsumsi: 0 };
   }
-  return base
+  return base;
 }
 
 function stokAktif(r: RowDetail): number {
-  return stokAktifAwal(itemKalkulasi(r))
+  return stokAktifAwal(itemKalkulasi(r));
 }
 
 function validRow(r: RowDetail): boolean {
-  return r.sisaLayak + r.rusakMalam + (makanSendiri.value ? r.konsumsi : 0) <= stokAktif(r)
+  return r.sisaLayak + r.rusakMalam + (makanSendiri.value ? r.konsumsi : 0) <= stokAktif(r);
 }
 
-const semuaValid = computed(() => rows.value.every(validRow))
+const semuaValid = computed(() => rows.value.every(validRow));
 
-const status = computed(() => hari.rekonsiliasi.value?.status)
-const rek = computed(() => hari.rekonsiliasi.value)
-const terkunci = computed(() => status.value === 'malam_selesai')
-const belumPagi = computed(() => status.value === 'pagi_pending' || status.value === 'libur')
+const status = computed(() => hari.rekonsiliasi.value?.status);
+const rek = computed(() => hari.rekonsiliasi.value);
+const terkunci = computed(() => status.value === 'malam_selesai');
+const belumPagi = computed(() => status.value === 'pagi_pending' || status.value === 'libur');
 
 /** Lauk yang memakai HPP estimasi karena modal belum diisi */
 const daftarEstimasi = computed(() =>
   rows.value.filter((r) => r.porsiBaru > 0 && r.modalBaru === 0),
-)
+);
 
-const modalKembalian = computed(() => pengaturan.value?.modal_kembalian_default ?? 0)
-const terimaDigital = computed(() => pengaturan.value?.terima_pembayaran_digital ?? false)
+const modalKembalian = computed(() => pengaturan.value?.modal_kembalian_default ?? 0);
+const terimaDigital = computed(() => pengaturan.value?.terima_pembayaran_digital ?? false);
 
-const agregat = computed(() => hitungAgregat(rows.value.map(itemKalkulasi)))
+const agregat = computed(() => hitungAgregat(rows.value.map(itemKalkulasi)));
 const selisih = computed(() =>
-  selisihKas(uangLaci.value ?? 0, modalKembalian.value, uangDigital.value ?? 0, agregat.value.pendapatan),
-)
+  selisihKas(
+    uangLaci.value ?? 0,
+    modalKembalian.value,
+    uangDigital.value ?? 0,
+    agregat.value.pendapatan,
+  ),
+);
 
-const simpanError = ref('')
-const simpanLoading = ref(false)
+const simpanError = ref('');
+const simpanLoading = ref(false);
 
 async function simpan() {
-  simpanError.value = ''
+  simpanError.value = '';
   if (!semuaValid.value) {
-    simpanError.value = 'Ada lauk yang jumlahnya melebihi stok aktif. Periksa kembali.'
-    return
+    simpanError.value = 'Ada lauk yang jumlahnya melebihi stok aktif. Periksa kembali.';
+    return;
   }
   if (uangLaci.value === null || uangLaci.value < 0) {
-    simpanError.value = 'Uang di laci wajib diisi.'
-    return
+    simpanError.value = 'Uang di laci wajib diisi.';
+    return;
   }
-  simpanLoading.value = true
+  simpanLoading.value = true;
   try {
     const items = rows.value.map((r) => {
-      const item = itemKalkulasi(r)
+      const item = itemKalkulasi(r);
       return {
         id: r.id,
         lauk_id: r.laukId,
@@ -90,19 +96,19 @@ async function simpan() {
         porsi_sisa_layak_jual: r.sisaLayak,
         porsi_rusak_malam: r.rusakMalam,
         porsi_konsumsi: makanSendiri.value ? r.konsumsi : 0,
-      }
-    })
+      };
+    });
     await hari.simpanMalam.mutateAsync({
       items,
       uangLaci: uangLaci.value,
-      uangDigital: terimaDigital.value ? uangDigital.value ?? 0 : 0,
+      uangDigital: terimaDigital.value ? (uangDigital.value ?? 0) : 0,
       modalKembalianPakai: modalKembalian.value,
-    })
-    resetInitialized()
+    });
+    resetInitialized();
   } catch (e) {
-    simpanError.value = pesanError(e)
+    simpanError.value = pesanError(e);
   } finally {
-    simpanLoading.value = false
+    simpanLoading.value = false;
   }
 }
 </script>
@@ -146,7 +152,9 @@ async function simpan() {
       <div v-for="row in rows" :key="row.id" class="rounded-xl border border-zinc-200 bg-white p-4">
         <div class="flex items-center justify-between">
           <p class="font-semibold">{{ row.namaLauk }}</p>
-          <p class="text-sm text-zinc-500">Terjual ≈ {{ Math.max(0, porsiDikonsumsi(itemKalkulasi(row))) }} porsi</p>
+          <p class="text-sm text-zinc-500">
+            Terjual ≈ {{ Math.max(0, porsiDikonsumsi(itemKalkulasi(row))) }} porsi
+          </p>
         </div>
         <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <div>
@@ -176,7 +184,7 @@ async function simpan() {
     <div v-else-if="status === 'pagi_selesai' && rows.length > 0" class="mt-4">
       <RingkasanHarianCard
         :pendapatan="agregat.pendapatan"
-        :uang-digital="terimaDigital ? uangDigital ?? 0 : 0"
+        :uang-digital="terimaDigital ? (uangDigital ?? 0) : 0"
         :hpp-nyata="agregat.hppNyata"
         :kerugian="agregat.kerugian"
         :profit="agregat.profit"
@@ -189,11 +197,19 @@ async function simpan() {
       <!-- Toggle makan sendiri -->
       <button
         v-if="!terkunci"
-        @click="makanSendiri = !makanSendiri"
         class="mt-4 w-full rounded-xl border px-4 py-3 text-base font-medium"
-        :class="makanSendiri ? 'border-green-600 bg-green-50 text-green-800' : 'border-zinc-300 bg-white text-zinc-600'"
+        :class="
+          makanSendiri
+            ? 'border-green-600 bg-green-50 text-green-800'
+            : 'border-zinc-300 bg-white text-zinc-600'
+        "
+        @click="makanSendiri = !makanSendiri"
       >
-        {{ makanSendiri ? '✓ Hari ini ada yang dimakan sendiri/keluarga' : 'Hari ini tidak ada yang dimakan sendiri (ketuk untuk ubah)' }}
+        {{
+          makanSendiri
+            ? '✓ Hari ini ada yang dimakan sendiri/keluarga'
+            : 'Hari ini tidak ada yang dimakan sendiri (ketuk untuk ubah)'
+        }}
       </button>
 
       <!-- Daftar lauk opname -->
@@ -206,7 +222,9 @@ async function simpan() {
         >
           <div class="flex items-center justify-between">
             <p class="font-semibold">{{ row.namaLauk }}</p>
-            <p class="text-sm text-zinc-500">Stok: <strong>{{ stokAktif(row) }}</strong></p>
+            <p class="text-sm text-zinc-500">
+              Stok: <strong>{{ stokAktif(row) }}</strong>
+            </p>
           </div>
 
           <div class="mt-3 grid grid-cols-1 gap-3">
@@ -220,17 +238,16 @@ async function simpan() {
             </div>
             <div v-if="makanSendiri" class="flex items-center justify-between">
               <span class="text-sm">Dimakan sendiri</span>
-              <Stepper v-model="row.konsumsi" :max="stokAktif(row) - row.sisaLayak - row.rusakMalam" />
+              <Stepper
+                v-model="row.konsumsi"
+                :max="stokAktif(row) - row.sisaLayak - row.rusakMalam"
+              />
             </div>
           </div>
 
           <div class="mt-2 flex items-center justify-between text-xs text-zinc-500">
-            <span>
-              Terjual ≈ {{ Math.max(0, porsiDikonsumsi(itemKalkulasi(row))) }} porsi
-            </span>
-            <span v-if="!validRow(row)" class="font-semibold text-red-600">
-              Melebihi stok!
-            </span>
+            <span> Terjual ≈ {{ Math.max(0, porsiDikonsumsi(itemKalkulasi(row))) }} porsi </span>
+            <span v-if="!validRow(row)" class="font-semibold text-red-600"> Melebihi stok! </span>
           </div>
 
           <!-- Modal bisa diisi belakangan di layar malam -->
@@ -241,7 +258,7 @@ async function simpan() {
               type="number"
               inputmode="numeric"
               min="0"
-              class="w-32 no-spinner rounded-lg border border-zinc-300 px-3 py-2 text-base text-right tabular-nums"
+              class="no-spinner w-32 rounded-lg border border-zinc-300 px-3 py-2 text-right text-base tabular-nums"
               placeholder="0"
             />
           </label>
@@ -257,7 +274,7 @@ async function simpan() {
             type="number"
             inputmode="numeric"
             min="0"
-            class="w-40 rounded-lg no-spinner border border-zinc-300 px-3 py-3 text-base text-right tabular-nums"
+            class="no-spinner w-40 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
             placeholder="0"
           />
         </label>
@@ -268,7 +285,7 @@ async function simpan() {
             type="number"
             inputmode="numeric"
             min="0"
-            class="w-40 no-spinner rounded-lg border border-zinc-300 px-3 py-3 text-base text-right tabular-nums"
+            class="no-spinner w-40 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
             placeholder="0"
           />
         </label>
@@ -278,7 +295,10 @@ async function simpan() {
       </div>
 
       <!-- Peringatan HPP estimasi -->
-      <div v-if="daftarEstimasi.length > 0 && !terkunci" class="mt-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800">
+      <div
+        v-if="daftarEstimasi.length > 0 && !terkunci"
+        class="mt-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800"
+      >
         <p class="font-semibold">HPP memakai estimasi:</p>
         <ul class="ml-4 list-disc">
           <li v-for="r in daftarEstimasi" :key="r.id">{{ r.namaLauk }}</li>
@@ -290,14 +310,16 @@ async function simpan() {
 
       <button
         v-if="!terkunci"
-        @click="simpan"
         :disabled="simpanLoading || !semuaValid"
         class="mt-4 w-full rounded-xl bg-green-600 px-4 py-4 text-base font-bold text-white active:bg-green-700"
+        @click="simpan"
       >
         {{ simpanLoading ? 'Menyimpan…' : 'Simpan & Kunci Hari Ini' }}
       </button>
     </div>
 
-    <div v-if="laukLoading || pengaturanLoading" class="mt-8 text-center text-zinc-500">Memuat…</div>
+    <div v-if="laukLoading || pengaturanLoading" class="mt-8 text-center text-zinc-500">
+      Memuat…
+    </div>
   </div>
 </template>

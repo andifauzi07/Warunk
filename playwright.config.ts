@@ -1,7 +1,7 @@
-import { defineConfig, devices } from '@playwright/test'
-import { ANON_KEY } from './e2e/constants'
+import { defineConfig, devices } from '@playwright/test';
+import { ANON_KEY } from './e2e/constants';
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173'
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
 
 export default defineConfig({
   testDir: './e2e',
@@ -40,4 +40,4 @@ export default defineConfig({
       VITE_SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? ANON_KEY,
     },
   },
-})
+});

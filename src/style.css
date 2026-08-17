@@ -10,9 +10,9 @@
     -webkit-appearance: none;
     margin: 0;
   }
-  
+
   /* Untuk Firefox */
-  &[type="number"] {
+  &[type='number'] {
     -moz-appearance: textfield;
   }
 }

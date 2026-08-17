@@ -1,28 +1,25 @@
-import { computed, ref, watch, type Ref } from 'vue'
-import { useMasterLauk } from '@/composables/useMasterLauk'
-import { useHariIni } from '@/composables/useHariIni'
-import type { ItemKalkulasi } from '@/lib/engine'
-import type { MasterLauk } from '@/types/database'
+import { computed, ref, watch, type Ref } from 'vue';
+import { useMasterLauk } from '@/composables/useMasterLauk';
+import { useHariIni } from '@/composables/useHariIni';
+import type { ItemKalkulasi } from '@/lib/engine';
 
 export interface RowDetail {
-  id: string
-  laukId: string
-  namaLauk: string
-  hargaJualPorsi: number
-  hppEstimasi: number
-  porsiCarryOver: number
-  hppCarryOver: number
-  basiPagi: number
-  porsiBaru: number
-  modalBaru: number
-  sisaLayak: number
-  rusakMalam: number
-  konsumsi: number
+  id: string;
+  laukId: string;
+  namaLauk: string;
+  hargaJualPorsi: number;
+  hppEstimasi: number;
+  porsiCarryOver: number;
+  hppCarryOver: number;
+  basiPagi: number;
+  porsiBaru: number;
+  modalBaru: number;
+  sisaLayak: number;
+  rusakMalam: number;
+  konsumsi: number;
 }
 
-function initRowsFromDetail(
-  detail: import('@/types/database').DetailStokLengkap[],
-): RowDetail[] {
+function initRowsFromDetail(detail: import('@/types/database').DetailStokLengkap[]): RowDetail[] {
   return detail.map((d) => ({
     id: d.id,
     laukId: d.lauk_id,
@@ -37,7 +34,7 @@ function initRowsFromDetail(
     sisaLayak: d.porsi_sisa_layak_jual,
     rusakMalam: d.porsi_rusak_malam,
     konsumsi: d.porsi_konsumsi,
-  }))
+  }));
 }
 
 export function toItemKalkulasi(r: RowDetail): ItemKalkulasi {
@@ -52,31 +49,31 @@ export function toItemKalkulasi(r: RowDetail): ItemKalkulasi {
     porsi_konsumsi: r.konsumsi,
     harga_jual_porsi: r.hargaJualPorsi,
     hpp_estimasi_porsi: r.hppEstimasi,
-  }
+  };
 }
 
 export function useDetailRows(tanggal: Ref<string>) {
-  const { data: laukList, isLoading: laukLoading } = useMasterLauk()
-  const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active))
-  const hari = useHariIni(tanggal, laukAktif)
-  const { error: hariError } = hari
+  const { data: laukList, isLoading: laukLoading } = useMasterLauk();
+  const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active));
+  const hari = useHariIni(tanggal, laukAktif);
+  const { error: hariError } = hari;
 
-  const rows = ref<RowDetail[]>([])
-  let initialized = false
+  const rows = ref<RowDetail[]>([]);
+  let initialized = false;
 
   watch(
     hari.detail,
     (d) => {
       if (d.length > 0 && !initialized) {
-        rows.value = initRowsFromDetail(d)
-        initialized = true
+        rows.value = initRowsFromDetail(d);
+        initialized = true;
       }
     },
     { immediate: true },
-  )
+  );
 
   function resetInitialized() {
-    initialized = false
+    initialized = false;
   }
 
   return {
@@ -87,5 +84,5 @@ export function useDetailRows(tanggal: Ref<string>) {
     hari,
     toItemKalkulasi,
     resetInitialized,
-  }
+  };
 }

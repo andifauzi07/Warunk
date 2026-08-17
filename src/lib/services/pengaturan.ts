@@ -1,13 +1,10 @@
-import { supabase } from '@/lib/supabase'
-import type { PengaturanWarung } from '@/types/database'
+import { supabase } from '@/lib/supabase';
+import type { PengaturanWarung } from '@/types/database';
 
 export async function fetchPengaturan(): Promise<PengaturanWarung | null> {
-  const { data, error } = await supabase
-    .from('pengaturan_warung')
-    .select('*')
-    .maybeSingle()
-  if (error) throw error
-  return data as PengaturanWarung | null
+  const { data, error } = await supabase.from('pengaturan_warung').select('*').maybeSingle();
+  if (error) throw error;
+  return data as PengaturanWarung | null;
 }
 
 export async function upsertPengaturan(
@@ -17,7 +14,7 @@ export async function upsertPengaturan(
     .from('pengaturan_warung')
     .upsert(input, { onConflict: 'user_id' })
     .select()
-    .single()
-  if (error) throw error
-  return data as PengaturanWarung
+    .single();
+  if (error) throw error;
+  return data as PengaturanWarung;
 }

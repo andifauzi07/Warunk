@@ -1,46 +1,51 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useStatusHari } from '@/composables/useStatusHari'
-import { useHariStore } from '@/stores/hari'
-import { STATUS_LABEL } from '@/types/database'
-import { tanggalBaca, pesanError } from '@/lib/format'
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useStatusHari } from '@/composables/useStatusHari';
+import { useHariStore } from '@/stores/hari';
+import { STATUS_LABEL } from '@/types/database';
+import { tanggalBaca, pesanError } from '@/lib/format';
 
-const { tanggal } = storeToRefs(useHariStore())
-const { rekonsiliasi, isLoading, tandaiLibur: tandaiLiburMut, bukaLag: bukaLagMut } = useStatusHari(tanggal)
+const { tanggal } = storeToRefs(useHariStore());
+const {
+  rekonsiliasi,
+  isLoading,
+  tandaiLibur: tandaiLiburMut,
+  bukaLag: bukaLagMut,
+} = useStatusHari(tanggal);
 
-const status = computed(() => rekonsiliasi.value?.status)
-const statusLabel = computed(() => (status.value ? STATUS_LABEL[status.value] : 'Memuat…'))
-const aksiError = ref('')
+const status = computed(() => rekonsiliasi.value?.status);
+const statusLabel = computed(() => (status.value ? STATUS_LABEL[status.value] : 'Memuat…'));
+const aksiError = ref('');
 
 const langkah = [
   { key: 'pagi_pending', label: 'Input Pagi' },
   { key: 'pagi_selesai', label: 'Input Malam' },
   { key: 'malam_selesai', label: 'Selesai' },
-]
+];
 const langkahIndex = computed(() => {
-  const s = status.value
-  if (s === 'libur') return -1
-  if (s === 'malam_selesai') return 3
-  if (s === 'pagi_selesai') return 2
-  return 1
-})
+  const s = status.value;
+  if (s === 'libur') return -1;
+  if (s === 'malam_selesai') return 3;
+  if (s === 'pagi_selesai') return 2;
+  return 1;
+});
 
 async function tandaiLibur() {
-  aksiError.value = ''
+  aksiError.value = '';
   try {
-    await tandaiLiburMut.mutateAsync()
+    await tandaiLiburMut.mutateAsync();
   } catch (e) {
-    aksiError.value = pesanError(e)
+    aksiError.value = pesanError(e);
   }
 }
 
 async function bukaLag() {
-  aksiError.value = ''
+  aksiError.value = '';
   try {
-    await bukaLagMut.mutateAsync()
+    await bukaLagMut.mutateAsync();
   } catch (e) {
-    aksiError.value = pesanError(e)
+    aksiError.value = pesanError(e);
   }
 }
 </script>
@@ -73,16 +78,13 @@ async function bukaLag() {
     <div v-if="isLoading" class="mt-8 text-center text-zinc-500">Memuat…</div>
 
     <!-- Status libur: tenang -->
-    <div
-      v-else-if="status === 'libur'"
-      class="mt-6 rounded-2xl bg-zinc-100 p-6 text-center"
-    >
+    <div v-else-if="status === 'libur'" class="mt-6 rounded-2xl bg-zinc-100 p-6 text-center">
       <p class="text-3xl">🌙</p>
       <p class="mt-2 text-lg font-semibold text-zinc-700">Hari ini libur</p>
       <p class="text-sm text-zinc-500">Tidak perlu input pagi atau malam.</p>
       <button
-        @click="bukaLag"
         class="mt-4 rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base font-medium"
+        @click="bukaLag"
       >
         Buka Lagi
       </button>
@@ -116,8 +118,8 @@ async function bukaLag() {
           <span class="text-sm opacity-90">Baseline stok hari ini</span>
         </RouterLink>
         <button
-          @click="tandaiLibur"
           class="mt-3 w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-base text-zinc-600"
+          @click="tandaiLibur"
         >
           Warung libur hari ini
         </button>

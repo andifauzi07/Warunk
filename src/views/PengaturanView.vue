@@ -1,74 +1,74 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from 'vue'
-import { usePengaturan } from '@/composables/usePengaturan'
-import { useSessionStore } from '@/stores/session'
-import { pesanError } from '@/lib/format'
+import { reactive, ref, watch } from 'vue';
+import { usePengaturan } from '@/composables/usePengaturan';
+import { useSessionStore } from '@/stores/session';
+import { pesanError } from '@/lib/format';
 
-const { data, isLoading, simpan } = usePengaturan()
-const session = useSessionStore()
+const { data, isLoading, simpan } = usePengaturan();
+const session = useSessionStore();
 
 const form = reactive({
   modal_kembalian_default: 0 as number | null,
   toleransi_selisih_persen: 5,
   terima_pembayaran_digital: false,
-})
+});
 
 watch(
   data,
   (p) => {
-    if (!p) return
-    form.modal_kembalian_default = p.modal_kembalian_default
-    form.toleransi_selisih_persen = p.toleransi_selisih_persen
-    form.terima_pembayaran_digital = p.terima_pembayaran_digital
+    if (!p) return;
+    form.modal_kembalian_default = p.modal_kembalian_default;
+    form.toleransi_selisih_persen = p.toleransi_selisih_persen;
+    form.terima_pembayaran_digital = p.terima_pembayaran_digital;
   },
   { immediate: true },
-)
+);
 
-const pesan = ref('')
-const error = ref('')
-const saving = ref(false)
-const loggingOut = ref(false)
+const pesan = ref('');
+const error = ref('');
+const saving = ref(false);
+const loggingOut = ref(false);
 
 function keAngka(nilai: unknown): number {
-  if (nilai === '' || nilai === null || nilai === undefined) return 0
-  const n = Number(nilai)
-  return Number.isFinite(n) ? n : 0
+  if (nilai === '' || nilai === null || nilai === undefined) return 0;
+  const n = Number(nilai);
+  return Number.isFinite(n) ? n : 0;
 }
 
 async function simpanSemua() {
-  error.value = ''
-  pesan.value = ''
-  const modalKembalian = keAngka(form.modal_kembalian_default)
-  const toleransi = keAngka(form.toleransi_selisih_persen)
+  error.value = '';
+  pesan.value = '';
+  const modalKembalian = keAngka(form.modal_kembalian_default);
+  const toleransi = keAngka(form.toleransi_selisih_persen);
   if (toleransi < 0 || toleransi > 100) {
-    error.value = 'Toleransi harus antara 0–100%.'
-    return
+    error.value = 'Toleransi harus antara 0–100%.';
+    return;
   }
-  saving.value = true
+  saving.value = true;
   try {
     await simpan.mutateAsync({
       user_id: session.user?.id ?? '',
       modal_kembalian_default: modalKembalian,
       toleransi_selisih_persen: toleransi,
       terima_pembayaran_digital: form.terima_pembayaran_digital,
-    })
-    pesan.value = 'Pengaturan tersimpan.'
+    });
+    pesan.value = 'Pengaturan tersimpan.';
   } catch (e) {
-    error.value = pesanError(e)
+    error.value = pesanError(e);
   } finally {
-    saving.value = false
+    saving.value = false;
   }
 }
 
 async function keluar() {
-  error.value = ''
-  loggingOut.value = true
+  error.value = '';
+  loggingOut.value = true;
   try {
-    await session.logout()
+    await session.logout();
   } catch (e) {
-    error.value = pesanError(e)
+    error.value = pesanError(e);
   } finally {
-    loggingOut.value = false
+    loggingOut.value = false;
   }
 }
 </script>
@@ -116,10 +116,14 @@ async function keluar() {
         </span>
       </label>
 
-      <label class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4">
+      <label
+        class="mt-4 flex items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4"
+      >
         <span>
           <span class="block text-sm font-medium">Menerima pembayaran digital</span>
-          <span class="block text-xs text-zinc-500">QRIS, GoPay, dst. Munculkan input uang digital di input malam.</span>
+          <span class="block text-xs text-zinc-500"
+            >QRIS, GoPay, dst. Munculkan input uang digital di input malam.</span
+          >
         </span>
         <button
           type="button"
@@ -138,9 +142,9 @@ async function keluar() {
 
       <button
         type="submit"
-        @click.prevent="simpanSemua"
         :disabled="saving"
         class="mt-5 w-full rounded-xl bg-green-600 px-4 py-4 text-base font-bold text-white active:bg-green-700"
+        @click.prevent="simpanSemua"
       >
         {{ saving ? 'Menyimpan…' : 'Simpan Pengaturan' }}
       </button>
@@ -150,9 +154,9 @@ async function keluar() {
       <p class="font-semibold">Akun</p>
       <p class="mt-1 text-sm text-zinc-500">{{ session.user?.email }}</p>
       <button
-        @click="keluar"
         :disabled="loggingOut"
         class="mt-3 w-full rounded-xl border border-red-300 px-4 py-3 text-base font-medium text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+        @click="keluar"
       >
         {{ loggingOut ? 'Keluar…' : 'Keluar' }}
       </button>

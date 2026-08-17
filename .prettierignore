@@ -1,0 +1,14 @@
+dist
+node_modules
+*.md
+bun.lock
+public
+openspec
+test-results
+.husky
+.opencode
+.vscode
+.github
+supabase
+.env
+.env.*

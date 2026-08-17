@@ -1,133 +1,133 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { storeToRefs } from 'pinia'
-import { usePengaturan } from '@/composables/usePengaturan'
-import { useHariStore } from '@/stores/hari'
-import { useAnalitik } from '@/composables/useAnalitik'
-import { statusSelisih } from '@/lib/engine'
-import { formatAngka, formatRupiah, pesanError, tambahHari } from '@/lib/format'
-import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue'
-import type { StatusHarian } from '@/types/database'
+import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
+import { usePengaturan } from '@/composables/usePengaturan';
+import { useHariStore } from '@/stores/hari';
+import { useAnalitik } from '@/composables/useAnalitik';
+import { statusSelisih } from '@/lib/engine';
+import { formatAngka, formatRupiah, pesanError, tambahHari } from '@/lib/format';
+import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue';
+import type { StatusHarian } from '@/types/database';
 
-const { tanggal } = storeToRefs(useHariStore())
-const { data: pengaturan } = usePengaturan()
+const { tanggal } = storeToRefs(useHariStore());
+const { data: pengaturan } = usePengaturan();
 
-const rentang = ref(30)
-const { ringkasanHariIni, tren, ranking, dari } = useAnalitik(tanggal.value, rentang)
+const rentang = ref(30);
+const { ringkasanHariIni, tren, ranking, dari } = useAnalitik(tanggal.value, rentang);
 
-const ringkasanData = ringkasanHariIni.data
-const ringkasanError = ringkasanHariIni.error
-const ringkasanLoading = ringkasanHariIni.isLoading
-const trenError = tren.error
-const trenLoading = tren.isLoading
-const trenData = tren.data
-const rankingError = ranking.error
-const rankingLoading = ranking.isLoading
-const rankingData = ranking.data
+const ringkasanData = ringkasanHariIni.data;
+const ringkasanError = ringkasanHariIni.error;
+const ringkasanLoading = ringkasanHariIni.isLoading;
+const trenError = tren.error;
+const trenLoading = tren.isLoading;
+const trenData = tren.data;
+const rankingError = ranking.error;
+const rankingLoading = ranking.isLoading;
+const rankingData = ranking.data;
 
-const ringkasan = computed(() => ringkasanData.value)
+const ringkasan = computed(() => ringkasanData.value);
 
 const statusLabel: Record<StatusHarian, string> = {
   pagi_pending: 'Input pagi belum selesai',
   pagi_selesai: 'Menunggu input malam',
   malam_selesai: 'Selesai & terkunci',
   libur: 'Libur',
-}
+};
 
-const toleransi = computed(() => pengaturan.value?.toleransi_selisih_persen ?? 5)
+const toleransi = computed(() => pengaturan.value?.toleransi_selisih_persen ?? 5);
 
 const levelSelisih = computed(() => {
-  const r = ringkasan.value
-  if (!r) return 'aman'
-  return statusSelisih(r.selisih_kas, r.total_pendapatan_estimasi, toleransi.value)
-})
+  const r = ringkasan.value;
+  if (!r) return 'aman';
+  return statusSelisih(r.selisih_kas, r.total_pendapatan_estimasi, toleransi.value);
+});
 
 const warnaSelisih: Record<string, string> = {
   aman: 'text-green-700',
   waspada: 'text-amber-600',
   kritis: 'text-red-600',
-}
+};
 
 const labelSelisih: Record<string, string> = {
   aman: 'Selisih wajar',
   waspada: 'Periksa uang laci',
   kritis: 'Selisih besar — cek ulang',
-}
+};
 
 interface Batang {
-  tanggal: string
-  label: string
-  nilai: number | null
-  status: StatusHarian | 'lupa' | 'nanti'
+  tanggal: string;
+  label: string;
+  nilai: number | null;
+  status: StatusHarian | 'lupa' | 'nanti';
 }
 
 const batang = computed<Batang[]>(() => {
-  const data = trenData.value ?? []
-  const peta = new Map(data.map((d) => [d.tanggal, d]))
-  const list: Batang[] = []
+  const data = trenData.value ?? [];
+  const peta = new Map(data.map((d) => [d.tanggal, d]));
+  const list: Batang[] = [];
   for (let i = 0; i < rentang.value; i++) {
-    const t = tambahHari(dari.value, i)
-    const d = peta.get(t)
+    const t = tambahHari(dari.value, i);
+    const d = peta.get(t);
     if (!d) {
-      list.push({ tanggal: t, label: labelTanggal(t), nilai: null, status: 'lupa' })
-      continue
+      list.push({ tanggal: t, label: labelTanggal(t), nilai: null, status: 'lupa' });
+      continue;
     }
     list.push({
       tanggal: t,
       label: labelTanggal(t),
       nilai: d.keuntungan_bersih,
       status: d.status,
-    })
+    });
   }
-  return list
-})
+  return list;
+});
 
 const skalaMaks = computed(() => {
-  const vals = batang.value.map((b) => Math.abs(b.nilai ?? 0))
-  return Math.max(1, ...vals)
-})
+  const vals = batang.value.map((b) => Math.abs(b.nilai ?? 0));
+  return Math.max(1, ...vals);
+});
 
 function labelTanggal(t: string): string {
-  return t.slice(8, 10)
+  return t.slice(8, 10);
 }
 
 function tinggiBar(b: Batang): number {
-  if (b.nilai === null) return 6
-  return Math.max(6, (Math.abs(b.nilai) / skalaMaks.value) * 120)
+  if (b.nilai === null) return 6;
+  return Math.max(6, (Math.abs(b.nilai) / skalaMaks.value) * 120);
 }
 
 function warnaBar(b: Batang): string {
-  if (b.status === 'libur') return 'bg-zinc-300'
-  if (b.status === 'lupa') return 'bg-red-300'
-  if (b.nilai === null || b.nilai === 0) return 'bg-zinc-300'
-  return b.nilai > 0 ? 'bg-green-600' : 'bg-red-500'
+  if (b.status === 'libur') return 'bg-zinc-300';
+  if (b.status === 'lupa') return 'bg-red-300';
+  if (b.nilai === null || b.nilai === 0) return 'bg-zinc-300';
+  return b.nilai > 0 ? 'bg-green-600' : 'bg-red-500';
 }
 
 const ringkasanTren = computed(() => {
-  const data = trenData.value ?? []
-  const hari = data.filter((d) => d.status === 'malam_selesai' && d.keuntungan_bersih !== null)
-  if (hari.length === 0) return null
-  const total = hari.reduce((a, d) => a + (d.keuntungan_bersih ?? 0), 0)
-  const rata = total / hari.length
-  return { total, rata, jumlahHari: hari.length }
-})
+  const data = trenData.value ?? [];
+  const hari = data.filter((d) => d.status === 'malam_selesai' && d.keuntungan_bersih !== null);
+  if (hari.length === 0) return null;
+  const total = hari.reduce((a, d) => a + (d.keuntungan_bersih ?? 0), 0);
+  const rata = total / hari.length;
+  return { total, rata, jumlahHari: hari.length };
+});
 
-const daftarLupa = computed(() => batang.value.filter((b) => b.status === 'lupa'))
+const daftarLupa = computed(() => batang.value.filter((b) => b.status === 'lupa'));
 
 const rentangLupa = computed(() => {
-  const l = daftarLupa.value
-  const awal = l[0]
-  const akhir = l[l.length - 1]
-  if (!awal || !akhir) return null
-  return { awal: awal.tanggal, akhir: akhir.tanggal, jumlah: l.length }
-})
+  const l = daftarLupa.value;
+  const awal = l[0];
+  const akhir = l[l.length - 1];
+  if (!awal || !akhir) return null;
+  return { awal: awal.tanggal, akhir: akhir.tanggal, jumlah: l.length };
+});
 
 const terjual = computed(() =>
   (rankingData.value ?? []).filter((r) => r.porsi_dikonsumsi > 0).slice(0, 5),
-)
+);
 const seringRusak = computed(() =>
   (rankingData.value ?? []).filter((r) => r.porsi_rusak_total > 0).slice(0, 5),
-)
+);
 </script>
 
 <template>
@@ -142,7 +142,11 @@ const seringRusak = computed(() =>
         <span
           v-if="ringkasan"
           class="rounded-full px-3 py-1 text-xs font-medium"
-          :class="ringkasan.status === 'malam_selesai' ? 'bg-green-100 text-green-800' : 'bg-zinc-100 text-zinc-600'"
+          :class="
+            ringkasan.status === 'malam_selesai'
+              ? 'bg-green-100 text-green-800'
+              : 'bg-zinc-100 text-zinc-600'
+          "
         >
           {{ statusLabel[ringkasan.status] }}
         </span>
@@ -177,10 +181,21 @@ const seringRusak = computed(() =>
           show-digital
         />
 
-        <div class="mt-3 rounded-xl border p-3" :class="levelSelisih === 'aman' ? 'border-green-200 bg-green-50' : levelSelisih === 'waspada' ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50'">
+        <div
+          class="mt-3 rounded-xl border p-3"
+          :class="
+            levelSelisih === 'aman'
+              ? 'border-green-200 bg-green-50'
+              : levelSelisih === 'waspada'
+                ? 'border-amber-200 bg-amber-50'
+                : 'border-red-200 bg-red-50'
+          "
+        >
           <div class="flex items-center justify-between">
             <span class="text-xs font-medium">Selisih kas (toleransi {{ toleransi }}%)</span>
-            <span class="text-xs" :class="warnaSelisih[levelSelisih]">{{ labelSelisih[levelSelisih] }}</span>
+            <span class="text-xs" :class="warnaSelisih[levelSelisih]">{{
+              labelSelisih[levelSelisih]
+            }}</span>
           </div>
           <p class="mt-1 text-lg font-bold tabular-nums" :class="warnaSelisih[levelSelisih]">
             {{ formatRupiah(ringkasan.selisih_kas) }}
@@ -257,7 +272,10 @@ const seringRusak = computed(() =>
           </div>
         </div>
 
-        <div v-if="ringkasanTren" class="mt-3 flex justify-between rounded-xl bg-zinc-50 p-3 text-sm">
+        <div
+          v-if="ringkasanTren"
+          class="mt-3 flex justify-between rounded-xl bg-zinc-50 p-3 text-sm"
+        >
           <div>
             <p class="text-zinc-500">Total {{ ringkasanTren.jumlahHari }} hari</p>
             <p class="font-semibold tabular-nums">{{ formatRupiah(ringkasanTren.total) }}</p>
@@ -270,15 +288,26 @@ const seringRusak = computed(() =>
 
         <div v-if="rentangLupa" class="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">
           <p class="font-semibold">⚠ {{ rentangLupa.jumlah }} hari tanpa input</p>
-          <p class="text-xs">Tanggal {{ rentangLupa.awal }}{{ rentangLupa.jumlah > 1 ? ' s.d. ' + rentangLupa.akhir : '' }} tidak punya data.</p>
+          <p class="text-xs">
+            Tanggal {{ rentangLupa.awal
+            }}{{ rentangLupa.jumlah > 1 ? ' s.d. ' + rentangLupa.akhir : '' }} tidak punya data.
+          </p>
         </div>
       </template>
 
       <div class="mt-2 flex gap-4 text-xs text-zinc-500">
-        <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-green-600"></span> Laba</span>
-        <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-red-500"></span> Rugi</span>
-        <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-zinc-300"></span> Libur/0</span>
-        <span class="flex items-center gap-1"><span class="h-2.5 w-2.5 rounded-sm bg-red-300"></span> Lupa input</span>
+        <span class="flex items-center gap-1"
+          ><span class="h-2.5 w-2.5 rounded-sm bg-green-600"></span> Laba</span
+        >
+        <span class="flex items-center gap-1"
+          ><span class="h-2.5 w-2.5 rounded-sm bg-red-500"></span> Rugi</span
+        >
+        <span class="flex items-center gap-1"
+          ><span class="h-2.5 w-2.5 rounded-sm bg-zinc-300"></span> Libur/0</span
+        >
+        <span class="flex items-center gap-1"
+          ><span class="h-2.5 w-2.5 rounded-sm bg-red-300"></span> Lupa input</span
+        >
       </div>
     </div>
 
@@ -300,12 +329,18 @@ const seringRusak = computed(() =>
         </p>
         <p v-else-if="terjual.length === 0" class="mt-2 text-sm text-zinc-500">Belum ada data.</p>
         <ol v-else class="mt-2 flex flex-col gap-2">
-          <li v-for="(r, i) in terjual" :key="r.lauk_id" class="flex items-center justify-between text-sm">
+          <li
+            v-for="(r, i) in terjual"
+            :key="r.lauk_id"
+            class="flex items-center justify-between text-sm"
+          >
             <span class="flex items-center gap-2">
               <span class="w-5 font-semibold text-zinc-400">{{ i + 1 }}</span>
               {{ r.nama_lauk }}
             </span>
-            <span class="font-semibold tabular-nums">{{ formatAngka(r.porsi_dikonsumsi) }} porsi</span>
+            <span class="font-semibold tabular-nums"
+              >{{ formatAngka(r.porsi_dikonsumsi) }} porsi</span
+            >
           </li>
         </ol>
       </div>
@@ -324,14 +359,22 @@ const seringRusak = computed(() =>
         <p v-else-if="rankingError" class="mt-2 text-sm text-red-600">
           {{ pesanError(rankingError) }}
         </p>
-        <p v-else-if="seringRusak.length === 0" class="mt-2 text-sm text-zinc-500">Bagus — tidak ada yang terbuang.</p>
+        <p v-else-if="seringRusak.length === 0" class="mt-2 text-sm text-zinc-500">
+          Bagus — tidak ada yang terbuang.
+        </p>
         <ol v-else class="mt-2 flex flex-col gap-2">
-          <li v-for="(r, i) in seringRusak" :key="r.lauk_id" class="flex items-center justify-between text-sm">
+          <li
+            v-for="(r, i) in seringRusak"
+            :key="r.lauk_id"
+            class="flex items-center justify-between text-sm"
+          >
             <span class="flex items-center gap-2">
               <span class="w-5 font-semibold text-zinc-400">{{ i + 1 }}</span>
               {{ r.nama_lauk }}
             </span>
-            <span class="font-semibold text-red-600 tabular-nums">{{ formatAngka(r.porsi_rusak_total) }} porsi</span>
+            <span class="font-semibold text-red-600 tabular-nums"
+              >{{ formatAngka(r.porsi_rusak_total) }} porsi</span
+            >
           </li>
         </ol>
       </div>

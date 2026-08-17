@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
-import { toItemKalkulasi, type RowDetail } from '../composables/useDetailRows'
-import { hppBaruPorsi } from '../lib/engine'
+import { describe, expect, it } from 'vitest';
+import { toItemKalkulasi, type RowDetail } from '../composables/useDetailRows';
+import { hppBaruPorsi } from '../lib/engine';
 
 function makeRow(overrides: Partial<RowDetail> = {}): RowDetail {
   return {
@@ -18,7 +18,7 @@ function makeRow(overrides: Partial<RowDetail> = {}): RowDetail {
     rusakMalam: 0,
     konsumsi: 0,
     ...overrides,
-  }
+  };
 }
 
 describe('DetailPagiInput payload equivalence', () => {
@@ -29,8 +29,8 @@ describe('DetailPagiInput payload equivalence', () => {
       basiPagi: 1,
       porsiBaru: 10,
       modalBaru: 70000,
-    })
-    const item = toItemKalkulasi(row)
+    });
+    const item = toItemKalkulasi(row);
 
     // Simulate the view's simpan() mapping
     const payload = {
@@ -42,7 +42,7 @@ describe('DetailPagiInput payload equivalence', () => {
       porsi_baru_dimasak: row.porsiBaru,
       modal_baru_total: row.modalBaru,
       hpp_baru_porsi: hppBaruPorsi(item),
-    }
+    };
 
     // Verify exact field set per refactoring-contract/spec.md
     const expectedFields = [
@@ -54,17 +54,17 @@ describe('DetailPagiInput payload equivalence', () => {
       'porsi_basi_pagi',
       'porsi_baru_dimasak',
       'porsi_carry_over',
-    ]
-    expect(Object.keys(payload).sort()).toEqual([...expectedFields].sort())
+    ];
+    expect(Object.keys(payload).sort()).toEqual([...expectedFields].sort());
 
     // Verify values per contract scenario
-    expect(payload.porsi_carry_over).toBe(5)
-    expect(payload.porsi_basi_pagi).toBe(1)
-    expect(payload.porsi_baru_dimasak).toBe(10)
-    expect(payload.modal_baru_total).toBe(70000)
-    expect(payload.hpp_baru_porsi).toBe(7000)
-  })
-})
+    expect(payload.porsi_carry_over).toBe(5);
+    expect(payload.porsi_basi_pagi).toBe(1);
+    expect(payload.porsi_baru_dimasak).toBe(10);
+    expect(payload.modal_baru_total).toBe(70000);
+    expect(payload.hpp_baru_porsi).toBe(7000);
+  });
+});
 
 describe('DetailMalamInput payload equivalence', () => {
   it('malam save produces exactly the fields specified in refactoring-contract', () => {
@@ -72,11 +72,11 @@ describe('DetailMalamInput payload equivalence', () => {
       sisaLayak: 3,
       rusakMalam: 1,
       konsumsi: 2,
-    })
-    const item = toItemKalkulasi(row)
+    });
+    const item = toItemKalkulasi(row);
 
     // Simulate the view's simpan() mapping
-    const makanSendiri = true
+    const makanSendiri = true;
     const payload = {
       id: row.id,
       lauk_id: row.laukId,
@@ -89,7 +89,7 @@ describe('DetailMalamInput payload equivalence', () => {
       porsi_sisa_layak_jual: row.sisaLayak,
       porsi_rusak_malam: row.rusakMalam,
       porsi_konsumsi: makanSendiri ? row.konsumsi : 0,
-    }
+    };
 
     // Verify exact field set per refactoring-contract/spec.md
     const expectedFields = [
@@ -104,24 +104,24 @@ describe('DetailMalamInput payload equivalence', () => {
       'porsi_konsumsi',
       'porsi_rusak_malam',
       'porsi_sisa_layak_jual',
-    ]
-    expect(Object.keys(payload).sort()).toEqual([...expectedFields].sort())
+    ];
+    expect(Object.keys(payload).sort()).toEqual([...expectedFields].sort());
 
     // Verify values per contract scenario
-    expect(payload.porsi_sisa_layak_jual).toBe(3)
-    expect(payload.porsi_rusak_malam).toBe(1)
-    expect(payload.porsi_konsumsi).toBe(2)
-  })
+    expect(payload.porsi_sisa_layak_jual).toBe(3);
+    expect(payload.porsi_rusak_malam).toBe(1);
+    expect(payload.porsi_konsumsi).toBe(2);
+  });
 
   it('malam save with makanSendiri=false sets konsumsi to 0', () => {
-    const row = makeRow({ konsumsi: 5 })
-    const item = toItemKalkulasi(row)
-    const makanSendiri = false
+    const row = makeRow({ konsumsi: 5 });
+    const item = toItemKalkulasi(row);
+    const makanSendiri = false;
 
     const payload = {
       porsi_konsumsi: makanSendiri ? row.konsumsi : 0,
-    }
+    };
 
-    expect(payload.porsi_konsumsi).toBe(0)
-  })
-})
+    expect(payload.porsi_konsumsi).toBe(0);
+  });
+});

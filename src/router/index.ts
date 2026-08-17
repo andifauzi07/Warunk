@@ -1,6 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { useSessionStore } from '@/stores/session'
-import { arahkanKe } from '@/lib/sessionNavigation'
+import { createRouter, createWebHistory } from 'vue-router';
+import { useSessionStore } from '@/stores/session';
+import { arahkanKe } from '@/lib/sessionNavigation';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -42,12 +42,12 @@ const router = createRouter({
       component: () => import('@/views/PengaturanView.vue'),
     },
   ],
-})
+});
 
 router.beforeEach(async (to) => {
-  const session = useSessionStore()
-  await session.waitForSession()
-  return arahkanKe({ user: session.user, route: to }) ?? true
-})
+  const session = useSessionStore();
+  await session.waitForSession();
+  return arahkanKe({ user: session.user, route: to }) ?? true;
+});
 
-export default router
+export default router;

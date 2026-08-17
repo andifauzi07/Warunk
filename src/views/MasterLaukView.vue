@@ -1,51 +1,51 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useMasterLauk } from '@/composables/useMasterLauk'
-import { formatRupiah, pesanError } from '@/lib/format'
-import type { MasterLauk } from '@/types/database'
+import { computed, ref } from 'vue';
+import { useMasterLauk } from '@/composables/useMasterLauk';
+import { formatRupiah, pesanError } from '@/lib/format';
+import type { MasterLauk } from '@/types/database';
 
-const { data: laukList, isLoading, error, tambah, ubah } = useMasterLauk()
+const { data: laukList, isLoading, error, tambah, ubah } = useMasterLauk();
 
-const showForm = ref(false)
-const editing = ref<MasterLauk | null>(null)
-const nama = ref('')
-const hargaJual = ref('')
-const hppEstimasi = ref('')
-const simpanError = ref('')
-const simpanLoading = ref(false)
+const showForm = ref(false);
+const editing = ref<MasterLauk | null>(null);
+const nama = ref('');
+const hargaJual = ref('');
+const hppEstimasi = ref('');
+const simpanError = ref('');
+const simpanLoading = ref(false);
 
 function mulaiTambah() {
-  editing.value = null
-  nama.value = ''
-  hargaJual.value = ''
-  hppEstimasi.value = ''
-  simpanError.value = ''
-  showForm.value = true
+  editing.value = null;
+  nama.value = '';
+  hargaJual.value = '';
+  hppEstimasi.value = '';
+  simpanError.value = '';
+  showForm.value = true;
 }
 
 function mulaiEdit(lauk: MasterLauk) {
-  editing.value = lauk
-  nama.value = lauk.nama_lauk
-  hargaJual.value = String(lauk.harga_jual_porsi)
-  hppEstimasi.value = String(lauk.hpp_estimasi_porsi)
-  simpanError.value = ''
-  showForm.value = true
+  editing.value = lauk;
+  nama.value = lauk.nama_lauk;
+  hargaJual.value = String(lauk.harga_jual_porsi);
+  hppEstimasi.value = String(lauk.hpp_estimasi_porsi);
+  simpanError.value = '';
+  showForm.value = true;
 }
 
 function batal() {
-  showForm.value = false
-  editing.value = null
+  showForm.value = false;
+  editing.value = null;
 }
 
 async function simpan() {
-  simpanError.value = ''
+  simpanError.value = '';
   if (!nama.value.trim()) {
-    simpanError.value = 'Nama lauk wajib diisi'
-    return
+    simpanError.value = 'Nama lauk wajib diisi';
+    return;
   }
-  simpanLoading.value = true
-  const harga = Number(hargaJual.value) || 0
-  const hpp = Number(hppEstimasi.value) || 0
+  simpanLoading.value = true;
+  const harga = Number(hargaJual.value) || 0;
+  const hpp = Number(hppEstimasi.value) || 0;
   try {
     if (editing.value) {
       await ubah.mutateAsync({
@@ -55,27 +55,27 @@ async function simpan() {
           harga_jual_porsi: harga,
           hpp_estimasi_porsi: hpp,
         },
-      })
+      });
     } else {
       await tambah.mutateAsync({
         nama_lauk: nama.value.trim(),
         harga_jual_porsi: harga,
         hpp_estimasi_porsi: hpp,
-      })
+      });
     }
-    batal()
+    batal();
   } catch (e) {
-    simpanError.value = pesanError(e)
+    simpanError.value = pesanError(e);
   } finally {
-    simpanLoading.value = false
+    simpanLoading.value = false;
   }
 }
 
 async function toggleAktif(lauk: MasterLauk) {
-  await ubah.mutateAsync({ id: lauk.id, input: { is_active: !lauk.is_active } })
+  await ubah.mutateAsync({ id: lauk.id, input: { is_active: !lauk.is_active } });
 }
 
-const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).length ?? 0)
+const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).length ?? 0);
 </script>
 
 <template>
@@ -86,8 +86,8 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
         <p class="text-sm text-zinc-500">{{ jumlahAktif }} lauk aktif</p>
       </div>
       <button
-        @click="mulaiTambah"
         class="rounded-lg bg-green-600 px-4 py-3 text-base font-semibold text-white active:bg-green-700"
+        @click="mulaiTambah"
       >
         + Lauk
       </button>
@@ -107,20 +107,21 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
         <div class="min-w-0">
           <p class="truncate font-medium">{{ lauk.nama_lauk }}</p>
           <p class="text-sm text-zinc-500">
-            Jual {{ formatRupiah(lauk.harga_jual_porsi) }} · HPP est. {{ formatRupiah(lauk.hpp_estimasi_porsi) }}
+            Jual {{ formatRupiah(lauk.harga_jual_porsi) }} · HPP est.
+            {{ formatRupiah(lauk.hpp_estimasi_porsi) }}
           </p>
         </div>
         <div class="flex shrink-0 items-center gap-2">
           <button
-            @click="toggleAktif(lauk)"
             class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
             :title="lauk.is_active ? 'Nonaktifkan' : 'Aktifkan'"
+            @click="toggleAktif(lauk)"
           >
             {{ lauk.is_active ? 'Aktif' : 'Nonaktif' }}
           </button>
           <button
-            @click="mulaiEdit(lauk)"
             class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-white active:bg-zinc-900"
+            @click="mulaiEdit(lauk)"
           >
             Edit
           </button>
@@ -179,15 +180,15 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
 
           <div class="mt-2 flex gap-2">
             <button
-              @click="batal"
               class="flex-1 rounded-lg border border-zinc-300 px-4 py-3 text-base"
+              @click="batal"
             >
               Batal
             </button>
             <button
-              @click="simpan"
               :disabled="simpanLoading"
               class="flex-1 rounded-lg bg-green-600 px-4 py-3 text-base font-semibold text-white active:bg-green-700"
+              @click="simpan"
             >
               {{ simpanLoading ? 'Menyimpan…' : 'Simpan' }}
             </button>

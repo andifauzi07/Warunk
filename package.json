@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
-    "test": "vitest run"
+    "test": "vitest run --project unit --project component",
+    "test:unit": "vitest run --project unit",
+    "test:component": "vitest run --project component",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",
@@ -20,11 +23,14 @@
     "vue-router": "^5.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.3.3",
     "@tsconfig/node24": "^24.0.4",
     "@types/node": "^24.13.3",
     "@vitejs/plugin-vue": "^6.0.8",
+    "@vue/test-utils": "^2.4.11",
     "@vue/tsconfig": "^0.9.1",
+    "happy-dom": "^20.11.2",
     "npm-run-all2": "^9.0.2",
     "supabase": "^2.114.0",
     "tailwindcss": "^4.3.3",

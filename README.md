@@ -14,7 +14,7 @@ Tidak seperti POS konvensional yang mencatat _setiap transaksi_ di kasir (terbuk
 | Backend & Auth | Supabase (PostgreSQL 17 + Auth + Row Level Security) |
 | Server State   | TanStack Query for Vue (cache, dedupe, invalidate)   |
 | Client State   | Pinia (sesi auth & tanggal aktif)                    |
-| Testing        | Vitest (22 unit test)                                |
+| Testing        | Vitest (unit + component), Playwright (E2E)        |
 
 ---
 
@@ -302,13 +302,14 @@ Hasilnya:
 
 ## Testing
 
-22 unit test dengan **Vitest** (`bun test`), khusus pure logic — cepat & tanpa dependensi eksternal:
+Test bertingkat via **Vitest** (`bun run test`). Catatan: perintah `bun test` (runner native bun) **tidak** didukung — runner tersebut mengabaikan konfigurasi Vitest sehingga gagal me-resolve alias `@/`. Selalu gunakan skrip di `package.json`.
 
-| File                                 | Lingkup                                                                                                                                                                    |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `engine.test.ts` (16 test)           | Stok aktif, HPP gabungan weighted average + fallback estimasi, porsi dikonsumsi, pendapatan, kerugian, agregat profit, `selisihKas`, `statusSelisih` (aman/waspada/kritis) |
-| `sessionNavigation.test.ts` (4 test) | Aturan guard `arahkanKe` (public/protected × login/logout)                                                                                                                 |
-| `rekonsiliasi.test.ts` (2 test)      | Idempotensi `siapkanHari` dengan klien Supabase in-memory — tanpa baris detail ganda, carry-over tersalin benar dari hari operasional terakhir                             |
+| Perintah             | Cakupan                                                                                                                                                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun run test`       | Semua unit + component test (cepat, tanpa dependensi eksternal). Unit: `engine.test.ts` (stok aktif, HPP gabungan weighted average + fallback estimasi, porsi dikonsumsi, pendapatan, kerugian, agregat profit, `selisihKas`, `statusSelisih`), `format.test.ts` (`formatRupiah`, `formatAngka`, `tanggalBaca`, `pesanError`, `tambahHari`), `sessionNavigation.test.ts` (aturan guard `arahkanKe`), `rekonsiliasi.test.ts` (idempotensi `siapkanHari` dengan klien Supabase in-memory). Component (`src/__tests__/component/`): `Stepper`, `InputPagiView`, `InputMalamView`, `DashboardView`, guard sesi (router + watcher `useAuthGuard`) |
+| `bun run test:unit`  | Hanya project `unit` (logika murni — node env)                                                                                                                                                           |
+| `bun run test:component` | Hanya project `component` (SFC via `@vue/test-utils` + happy-dom)                                                                                                                                     |
+| `bun run test:e2e`   | End-to-end (Playwright) terhadap build produksi + Supabase local: perjalanan satu hari penuh, validasi, navigasi sesi                                                                                     |
 
 ---
 
@@ -331,8 +332,11 @@ bun dev
 # 4. Type-check
 bun run type-check
 
-# 5. Unit test
-bun test
+# 5. Unit & component test
+bun run test
+
+# 5b. End-to-end test (wajib Supabase local + browser Playwright)
+bun run test:e2e
 
 # 6. Build produksi (type-check + build)
 bun run build

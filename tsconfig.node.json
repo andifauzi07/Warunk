@@ -6,7 +6,9 @@
     "vitest.config.*",
     "cypress.config.*",
     "playwright.config.*",
-    "eslint.config.*"
+    "eslint.config.*",
+    "tests/**/*",
+    "e2e/**/*"
   ],
   "compilerOptions": {
     // Most tools use transpilation instead of Node.js's native type-stripping.
@@ -15,7 +17,13 @@
     "moduleResolution": "bundler",
 
     // Include Node.js types and avoid accidentally including other `@types/*` packages.
-    "types": ["node"],
+    // `vite/client` provides `import.meta.env` typing for src modules pulled in by tests.
+    "types": ["node", "vite/client"],
+
+    // Path mapping for `@/` imports used by service modules referenced from tests.
+    "paths": {
+      "@/*": ["./src/*"]
+    },
 
     // Disable emitting output during `vue-tsc --build`, which is used for type-checking only.
     "noEmit": true,

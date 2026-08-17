@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   hitungAgregat,
+  hppBaruPorsi,
   hppGabungan,
+  hppNyataItem,
   kerugianItem,
   pendapatanItem,
   porsiDikonsumsi,
@@ -116,5 +118,60 @@ describe('selisihKas', () => {
 
   it('negatif = potensi kebocoran', () => {
     expect(selisihKas(300000, 100000, 0, 400000)).toBe(-200000)
+  })
+})
+
+describe('hppBaruPorsi (fallback estimasi)', () => {
+  it('modal diisi → modal ÷ porsi', () => {
+    expect(hppBaruPorsi(base)).toBe(7000)
+  })
+
+  it('modal nol → pakai HPP estimasi', () => {
+    expect(hppBaruPorsi({ ...base, modal_baru_total: 0, hpp_estimasi_porsi: 6500 })).toBe(6500)
+  })
+
+  it('modal nol dan estimasi tidak ada → 0', () => {
+    expect(
+      hppBaruPorsi({
+        ...base,
+        modal_baru_total: 0,
+        hpp_estimasi_porsi: undefined,
+      }),
+    ).toBe(0)
+  })
+
+  it('tanpa porsi baru → 0 (hindari pembagian nol)', () => {
+    expect(hppBaruPorsi({ ...base, porsi_baru_dimasak: 0 })).toBe(0)
+  })
+})
+
+describe('hitungAgregat tanpa item', () => {
+  it('mengembalikan agregat nol semua', () => {
+    expect(hitungAgregat([])).toEqual({ pendapatan: 0, hppNyata: 0, kerugian: 0, profit: 0 })
+  })
+})
+
+describe('porsi dikonsumsi negatif di-clamp', () => {
+  it('pendapatan & HPP nyata 0 saat sisa melebihi stok', () => {
+    const over = {
+      ...base,
+      porsi_sisa_layak_jual: 30,
+      porsi_rusak_malam: 0,
+      porsi_konsumsi: 0,
+    }
+    expect(porsiDikonsumsi(over)).toBeLessThan(0)
+    expect(pendapatanItem(over)).toBe(0)
+    expect(hppNyataItem(over)).toBe(0)
+  })
+})
+
+describe('statusSelisih saat pendapatan ≤ 0', () => {
+  it('selisih 0 dengan pendapatan 0 → aman', () => {
+    expect(statusSelisih(0, 0, 5)).toBe('aman')
+  })
+
+  it('selisih bukan 0 dengan pendapatan 0 → kritis', () => {
+    expect(statusSelisih(1000, 0, 5)).toBe('kritis')
+    expect(statusSelisih(1000, -100, 5)).toBe('kritis')
   })
 })

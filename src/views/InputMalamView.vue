@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useDetailRows } from '@/composables/useDetailRows';
 import { usePengaturan } from '@/composables/usePengaturan';
 import { useHariStore } from '@/stores/hari';
 import Stepper from '@/components/Stepper.vue';
 import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue';
+import AlertDialog from '@/components/AlertDialog.vue';
 import {
   hitungAgregat,
   hppBaruPorsi,
@@ -17,6 +19,8 @@ import type { ItemKalkulasi } from '@/lib/engine';
 import { formatRupiah, pesanError } from '@/lib/format';
 import type { RowDetail } from '@/composables/useDetailRows';
 
+const route = useRoute();
+const router = useRouter();
 const { tanggal } = storeToRefs(useHariStore());
 const { rows, hariError, laukLoading, hari, toItemKalkulasi, resetInitialized } =
   useDetailRows(tanggal);
@@ -25,6 +29,8 @@ const { data: pengaturan, isLoading: pengaturanLoading } = usePengaturan();
 const makanSendiri = ref(true);
 const uangLaci = ref<number | null>(null);
 const uangDigital = ref<number | null>(null);
+const editMode = ref(false);
+const showDialog = ref(false);
 
 function itemKalkulasi(r: RowDetail): ItemKalkulasi {
   const base = toItemKalkulasi(r);
@@ -49,10 +55,8 @@ const rek = computed(() => hari.rekonsiliasi.value);
 const terkunci = computed(() => status.value === 'malam_selesai');
 const belumPagi = computed(() => status.value === 'pagi_pending' || status.value === 'libur');
 
-/** Lauk yang memakai HPP estimasi karena modal belum diisi */
-const daftarEstimasi = computed(() =>
-  rows.value.filter((r) => r.porsiBaru > 0 && r.modalBaru === 0),
-);
+/** Derive makanSendiri awal dari data tersimpan — ada konsumsi > 0? */
+const makanSendiriAwal = computed(() => rows.value.some((r) => r.konsumsi > 0));
 
 const modalKembalian = computed(() => pengaturan.value?.modal_kembalian_default ?? 0);
 const terimaDigital = computed(() => pengaturan.value?.terima_pembayaran_digital ?? false);
@@ -69,6 +73,29 @@ const selisih = computed(() =>
 
 const simpanError = ref('');
 const simpanLoading = ref(false);
+
+// Initialize makanSendiri from saved data when rows are loaded
+watch(
+  rows,
+  (r) => {
+    if (r.length > 0 && terkunci.value && !editMode.value) {
+      makanSendiri.value = makanSendiriAwal.value;
+    }
+  },
+  { immediate: true },
+);
+
+// Check query param for edit mode from HomeView (fire when data loads)
+watch(
+  terkunci,
+  (v) => {
+    if (v && route.query.edit === '1') {
+      editMode.value = true;
+      router.replace({ query: {} });
+    }
+  },
+  { immediate: true },
+);
 
 async function simpan() {
   simpanError.value = '';
@@ -104,6 +131,7 @@ async function simpan() {
       uangDigital: terimaDigital.value ? (uangDigital.value ?? 0) : 0,
       modalKembalianPakai: modalKembalian.value,
     });
+    editMode.value = false;
     resetInitialized();
   } catch (e) {
     simpanError.value = pesanError(e);
@@ -130,8 +158,8 @@ async function simpan() {
       }}
     </div>
 
-    <!-- Terkunci: tampilan ringkasan read-only -->
-    <div v-else-if="terkunci && rows.length > 0" class="mt-4 flex flex-col gap-3">
+    <!-- Terkunci: tampilan ringkasan read-only + tombol edit -->
+    <div v-else-if="terkunci && rows.length > 0 && !editMode" class="mt-4 flex flex-col gap-3">
       <div class="rounded-xl bg-green-50 p-4 text-green-800">
         <p class="font-semibold">✓ Input malam tersimpan</p>
         <p class="mt-0.5 text-sm">Hari ini terkunci — data tidak dapat diubah lagi.</p>
@@ -173,14 +201,126 @@ async function simpan() {
             <span class="text-zinc-500">Dimakan sendiri</span>
             <p class="font-semibold tabular-nums">{{ row.konsumsi }}</p>
           </div>
-          <div v-if="row.modalBaru > 0">
-            <span class="text-zinc-500">Modal bahan</span>
-            <p class="font-semibold tabular-nums">{{ formatRupiah(row.modalBaru) }}</p>
+        </div>
+      </div>
+
+      <button
+        class="mt-2 w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-base font-medium text-zinc-700 active:bg-zinc-100"
+        @click="showDialog = true"
+      >
+        Ubah Input Malam
+      </button>
+    </div>
+
+    <!-- Edit mode: all fields editable -->
+    <div v-else-if="terkunci && rows.length > 0 && editMode" class="mt-4">
+      <RingkasanHarianCard
+        :pendapatan="agregat.pendapatan"
+        :uang-digital="terimaDigital ? (uangDigital ?? 0) : 0"
+        :hpp-nyata="agregat.hppNyata"
+        :kerugian="agregat.kerugian"
+        :profit="agregat.profit"
+        :uang-laci="(uangLaci ?? 0) - modalKembalian"
+        :modal-kembalian="0"
+        :selisih-kas="selisih"
+        show-digital
+      />
+
+      <!-- Toggle makan sendiri -->
+      <button
+        class="mt-4 w-full rounded-xl border px-4 py-3 text-base font-medium"
+        :class="
+          makanSendiri
+            ? 'border-green-600 bg-green-50 text-green-800'
+            : 'border-zinc-300 bg-white text-zinc-600'
+        "
+        @click="makanSendiri = !makanSendiri"
+      >
+        {{
+          makanSendiri
+            ? '✓ Hari ini ada yang dimakan sendiri/keluarga'
+            : 'Hari ini tidak ada yang dimakan sendiri (ketuk untuk ubah)'
+        }}
+      </button>
+
+      <div class="mt-3 flex flex-col gap-3">
+        <div
+          v-for="row in rows"
+          :key="row.id"
+          class="rounded-xl border border-zinc-200 bg-white p-4"
+          :class="{ 'border-red-400': !validRow(row) }"
+        >
+          <div class="flex items-center justify-between">
+            <p class="font-semibold">{{ row.namaLauk }}</p>
+            <p class="text-sm text-zinc-500">
+              Stok: <strong>{{ stokAktif(row) }}</strong>
+            </p>
+          </div>
+
+          <div class="mt-3 grid grid-cols-1 gap-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Sisa layak jual besok</span>
+              <Stepper v-model="row.sisaLayak" :max="stokAktif(row)" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm">Rusak/basi</span>
+              <Stepper v-model="row.rusakMalam" :max="stokAktif(row) - row.sisaLayak" />
+            </div>
+            <div v-if="makanSendiri" class="flex items-center justify-between">
+              <span class="text-sm">Dimakan sendiri</span>
+              <Stepper
+                v-model="row.konsumsi"
+                :max="stokAktif(row) - row.sisaLayak - row.rusakMalam"
+              />
+            </div>
+          </div>
+
+          <div class="mt-2 flex items-center justify-between text-xs text-zinc-500">
+            <span> Terjual ≈ {{ Math.max(0, porsiDikonsumsi(itemKalkulasi(row))) }} porsi </span>
+            <span v-if="!validRow(row)" class="font-semibold text-red-600"> Melebihi stok! </span>
           </div>
         </div>
       </div>
+
+      <!-- Uang -->
+      <div class="mt-4 rounded-xl border border-zinc-200 bg-white p-4">
+        <label class="flex items-center justify-between gap-3">
+          <span class="text-sm font-medium">Total uang di laci</span>
+          <input
+            v-model.number="uangLaci"
+            type="number"
+            inputmode="numeric"
+            min="0"
+            class="no-spinner w-40 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
+            placeholder="0"
+          />
+        </label>
+        <label v-if="terimaDigital" class="mt-3 flex items-center justify-between gap-3">
+          <span class="text-sm font-medium">Uang digital masuk (QRIS/GoPay)</span>
+          <input
+            v-model.number="uangDigital"
+            type="number"
+            inputmode="numeric"
+            min="0"
+            class="no-spinner w-40 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
+            placeholder="0"
+          />
+        </label>
+        <p class="mt-3 text-xs text-zinc-500">
+          Modal kembalian dipakai: {{ formatRupiah(modalKembalian) }} (dari pengaturan)
+        </p>
+      </div>
+
+      <button
+        :disabled="simpanLoading || !semuaValid"
+        class="mt-4 w-full rounded-xl bg-green-600 px-4 py-4 text-base font-bold text-white active:bg-green-700"
+        @click="simpan"
+      >
+        {{ simpanLoading ? 'Menyimpan…' : 'Simpan & Kunci Hari Ini' }}
+      </button>
     </div>
 
+    <!-- Normal input mode (pagi_selesai) -->
     <div v-else-if="status === 'pagi_selesai' && rows.length > 0" class="mt-4">
       <RingkasanHarianCard
         :pendapatan="agregat.pendapatan"
@@ -249,19 +389,6 @@ async function simpan() {
             <span> Terjual ≈ {{ Math.max(0, porsiDikonsumsi(itemKalkulasi(row))) }} porsi </span>
             <span v-if="!validRow(row)" class="font-semibold text-red-600"> Melebihi stok! </span>
           </div>
-
-          <!-- Modal bisa diisi belakangan di layar malam -->
-          <label v-if="row.porsiBaru > 0" class="mt-2 flex items-center justify-between gap-3">
-            <span class="text-sm text-zinc-600">Modal bahan (Rp)</span>
-            <input
-              v-model.number="row.modalBaru"
-              type="number"
-              inputmode="numeric"
-              min="0"
-              class="no-spinner w-32 rounded-lg border border-zinc-300 px-3 py-2 text-right text-base tabular-nums"
-              placeholder="0"
-            />
-          </label>
         </div>
       </div>
 
@@ -294,20 +421,6 @@ async function simpan() {
         </p>
       </div>
 
-      <!-- Peringatan HPP estimasi -->
-      <div
-        v-if="daftarEstimasi.length > 0 && !terkunci"
-        class="mt-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-800"
-      >
-        <p class="font-semibold">HPP memakai estimasi:</p>
-        <ul class="ml-4 list-disc">
-          <li v-for="r in daftarEstimasi" :key="r.id">{{ r.namaLauk }}</li>
-        </ul>
-        <p class="mt-1 text-xs">
-          Isi modal bahan di atas bila ingin HPP akurat. Hari tetap bisa dikunci dengan estimasi.
-        </p>
-      </div>
-
       <button
         v-if="!terkunci"
         :disabled="simpanLoading || !semuaValid"
@@ -321,5 +434,16 @@ async function simpan() {
     <div v-if="laukLoading || pengaturanLoading" class="mt-8 text-center text-zinc-500">
       Memuat…
     </div>
+
+    <!-- AlertDialog konfirmasi edit -->
+    <AlertDialog
+      :open="showDialog"
+      pesan="Yakin ingin mengedit input malam hari ini? Data yang sudah tersimpan akan diubah."
+      @confirm="
+        editMode = true;
+        showDialog = false;
+      "
+      @cancel="showDialog = false"
+    />
   </div>
 </template>

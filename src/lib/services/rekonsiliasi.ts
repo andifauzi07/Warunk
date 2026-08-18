@@ -179,6 +179,23 @@ export async function simpanMalam(
 ): Promise<void> {
   const user_id = await currentUserId();
   if (!user_id) throw new Error('Belum login');
+
+  // Guard: jika status sudah malam_selesai (edit mode), revert ke pagi_selesai
+  // supaya database trigger hitung_agregat_rekonsiliasi() bisa jalan.
+  const { data: rek, error: fetchErr } = await supabase
+    .from('rekonsiliasi_harian')
+    .select('status')
+    .eq('id', rekonsiliasiId)
+    .single();
+  if (fetchErr) throw fetchErr;
+  if (rek?.status === 'malam_selesai') {
+    const { error: revertErr } = await supabase
+      .from('rekonsiliasi_harian')
+      .update({ status: 'pagi_selesai' })
+      .eq('id', rekonsiliasiId);
+    if (revertErr) throw revertErr;
+  }
+
   // Detail dulu (trigger menghitung ulang agregat saat status belum terkunci),
   // lalu kunci status + kolom uang.
   const { error } = await supabase

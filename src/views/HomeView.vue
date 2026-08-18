@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useStatusHari } from '@/composables/useStatusHari';
 import { useHariStore } from '@/stores/hari';
 import { STATUS_LABEL } from '@/types/database';
 import { tanggalBaca, pesanError } from '@/lib/format';
+import AlertDialog from '@/components/AlertDialog.vue';
 
+const router = useRouter();
 const { tanggal } = storeToRefs(useHariStore());
 const {
   rekonsiliasi,
@@ -17,6 +20,7 @@ const {
 const status = computed(() => rekonsiliasi.value?.status);
 const statusLabel = computed(() => (status.value ? STATUS_LABEL[status.value] : 'Memuat…'));
 const aksiError = ref('');
+const dialogEditMalam = ref(false);
 
 const langkah = [
   { key: 'pagi_pending', label: 'Input Pagi' },
@@ -47,6 +51,15 @@ async function bukaLag() {
   } catch (e) {
     aksiError.value = pesanError(e);
   }
+}
+
+function tanyaEditMalam() {
+  dialogEditMalam.value = true;
+}
+
+function bukaEditMalam() {
+  dialogEditMalam.value = false;
+  router.push('/malam?edit=1');
 }
 </script>
 
@@ -157,11 +170,27 @@ async function bukaLag() {
       </div>
 
       <RouterLink
+        v-if="status !== 'malam_selesai'"
         to="/malam"
         class="mt-3 block w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-center text-base text-zinc-600"
       >
         Input Malam
       </RouterLink>
+      <button
+        v-else
+        class="mt-3 block w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-center text-base text-zinc-600 active:bg-zinc-100"
+        @click="tanyaEditMalam"
+      >
+        Koreksi Input Malam
+      </button>
     </div>
+
+    <!-- AlertDialog konfirmasi koreksi malam -->
+    <AlertDialog
+      :open="dialogEditMalam"
+      pesan="Yakin ingin mengoreksi input malam hari ini? Anda akan diarahkan ke halaman Input Malam untuk mengedit data."
+      @confirm="bukaEditMalam"
+      @cancel="dialogEditMalam = false"
+    />
   </div>
 </template>

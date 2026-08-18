@@ -13,17 +13,10 @@ export const E2E_STATE_PATH = 'e2e/.auth/user.json';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
 
-function todayString() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
 /**
  * Seed data E2E terhadap Supabase local:
  * 1. pastikan user E2E ada (createUser idempoten),
- * 2. reset data hari ini + seed master lauk,
+ * 2. reset data + seed master lauk,
  * 3. login via UI → simpan storageState agar spec autentik langsung masuk.
  */
 export default async function globalSetup() {
@@ -55,8 +48,7 @@ export default async function globalSetup() {
   const { error: resetError } = await user
     .from('rekonsiliasi_harian')
     .delete()
-    .eq('user_id', E2E_USER.id)
-    .gte('tanggal', todayString());
+    .eq('user_id', E2E_USER.id);
   if (resetError) throw resetError;
 
   await user.from('master_lauk').delete().eq('user_id', E2E_USER.id);

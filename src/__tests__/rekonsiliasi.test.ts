@@ -1,5 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { siapkanHari } from '../lib/services/rekonsiliasi';
+import {
+  siapkanHari,
+  getCarryOverForLauk,
+  zeroCarryOverForLauk,
+} from '../lib/services/rekonsiliasi';
 import type { MasterLauk } from '../types/database';
 
 const mocks = vi.hoisted(() => ({
@@ -92,6 +96,26 @@ vi.mock('@/lib/supabase', () => {
             then: (resolve: (v: unknown) => void) => resolve({ data: arr, error: null }),
           };
           return ins;
+        },
+        update: (payload: Record<string, unknown>) => {
+          const store =
+            table === 'detail_stok_harian'
+              ? m.state.detail_stok_harian
+              : m.state.rekonsiliasi_harian;
+          const matched = matches();
+          for (const row of matched) {
+            Object.assign(row, payload);
+          }
+          const upd: Record<string, unknown> = {
+            eq: (k: string, v: unknown) => {
+              filters.push([k, v, 'eq']);
+              return upd;
+            },
+            select: () => upd,
+            single: async () => ({ data: matched[0] ?? null, error: null }),
+            then: (resolve: (v: unknown) => void) => resolve({ data: matched, error: null }),
+          };
+          return upd;
         },
       };
       return q;
@@ -192,5 +216,84 @@ describe('siapkanHari', () => {
     expect(lagi.detail).toHaveLength(2);
     expect(mocks.stats.detailInsert).toBe(1);
     expect(mocks.stats.detailGetToday).toBe(2);
+  });
+});
+
+describe('getCarryOverForLauk', () => {
+  beforeEach(() => reset());
+
+  it('mengembalikan porsi_carry_over jika ada baris detail', async () => {
+    reset(
+      [{ id: 'rek-1', tanggal: '2026-08-16', status: 'pagi_pending' }],
+      [
+        {
+          id: 'd1',
+          rekonsiliasi_id: 'rek-1',
+          lauk_id: 'lauk-a',
+          porsi_carry_over: 5,
+        },
+      ],
+    );
+    const hasil = await getCarryOverForLauk('lauk-a', '2026-08-16');
+    expect(hasil).toBe(5);
+  });
+
+  it('mengembalikan 0 jika tidak ada baris detail', async () => {
+    reset([{ id: 'rek-1', tanggal: '2026-08-16', status: 'pagi_pending' }], []);
+    const hasil = await getCarryOverForLauk('lauk-a', '2026-08-16');
+    expect(hasil).toBe(0);
+  });
+
+  it('mengembalikan 0 jika tidak ada rekonsiliasi untuk tanggal', async () => {
+    reset([], []);
+    const hasil = await getCarryOverForLauk('lauk-a', '2026-08-16');
+    expect(hasil).toBe(0);
+  });
+});
+
+describe('zeroCarryOverForLauk', () => {
+  beforeEach(() => reset());
+
+  it('mengosongkan porsi_carry_over', async () => {
+    reset(
+      [{ id: 'rek-1', tanggal: '2026-08-16', status: 'pagi_pending' }],
+      [
+        {
+          id: 'd1',
+          rekonsiliasi_id: 'rek-1',
+          lauk_id: 'lauk-a',
+          porsi_carry_over: 5,
+          porsi_basi_pagi: 0,
+        },
+      ],
+    );
+    await zeroCarryOverForLauk('lauk-a', '2026-08-16');
+    const detail = mocks.state.detail_stok_harian[0] as Record<string, unknown>;
+    expect(detail.porsi_carry_over).toBe(0);
+    expect(detail.porsi_basi_pagi).toBe(0);
+  });
+
+  it('tidak melakukan apa-apa jika carry_over sudah 0', async () => {
+    reset(
+      [{ id: 'rek-1', tanggal: '2026-08-16', status: 'pagi_pending' }],
+      [
+        {
+          id: 'd1',
+          rekonsiliasi_id: 'rek-1',
+          lauk_id: 'lauk-a',
+          porsi_carry_over: 0,
+          porsi_basi_pagi: 0,
+        },
+      ],
+    );
+    await zeroCarryOverForLauk('lauk-a', '2026-08-16');
+    const detail = mocks.state.detail_stok_harian[0] as Record<string, unknown>;
+    expect(detail.porsi_carry_over).toBe(0);
+    expect(detail.porsi_basi_pagi).toBe(0);
+  });
+
+  it('tidak melakukan apa-apa jika tidak ada baris detail', async () => {
+    reset([{ id: 'rek-1', tanggal: '2026-08-16', status: 'pagi_pending' }], []);
+    await expect(zeroCarryOverForLauk('lauk-a', '2026-08-16')).resolves.toBeUndefined();
   });
 });

@@ -2,10 +2,10 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
-import InputPagiView from '@/views/InputPagiView.vue';
-import * as svc from '@/lib/services/rekonsiliasi';
-import { fetchMasterLauk } from '@/lib/services/masterLauk';
-import type { MasterLauk } from '@/types/database';
+import InputPagiView from '../../views/InputPagiView.vue';
+import * as svc from '../../lib/services/rekonsiliasi';
+import { fetchMasterLauk } from '../../lib/services/masterLauk';
+import type { MasterLauk } from '../../types/database';
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {},

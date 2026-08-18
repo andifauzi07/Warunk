@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
-import Stepper from '@/components/Stepper.vue';
+import Stepper from '../../components/Stepper.vue';
 
 describe('Stepper', () => {
   it('menampilkan nilai awal', () => {

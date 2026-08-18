@@ -2,16 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import { ANON_KEY, SUPABASE_URL } from './constants';
 import { E2E_USER } from './global-setup';
 
-function todayString() {
-  const d = new Date();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
-}
-
 /**
- * Reset data E2E user ke state pagi_pending untuk hari ini:
- * hapus rekonsiliasi (cascade ke detail_stok_harian) lalu seed ulang master_lauk.
+ * Reset data E2E user ke state bersih:
+ * hapus semua rekonsiliasi (cascade ke detail_stok_harian) lalu seed ulang master_lauk.
  * Dipanggil di `beforeEach` agar tiap spec berjalan dari state bersih.
  */
 export async function resetHariIni() {
@@ -27,8 +20,7 @@ export async function resetHariIni() {
   const { error: resetError } = await user
     .from('rekonsiliasi_harian')
     .delete()
-    .eq('user_id', E2E_USER.id)
-    .gte('tanggal', todayString());
+    .eq('user_id', E2E_USER.id);
   if (resetError) throw resetError;
 
   await user.from('master_lauk').delete().eq('user_id', E2E_USER.id);

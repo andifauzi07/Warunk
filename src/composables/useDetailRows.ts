@@ -65,7 +65,8 @@ export function useDetailRows(tanggal: Ref<string>) {
     hari.detail,
     (d) => {
       if (d.length > 0 && !initialized) {
-        rows.value = initRowsFromDetail(d);
+        const activeIds = new Set(laukAktif.value.map((l) => l.id));
+        rows.value = initRowsFromDetail(d).filter((r) => activeIds.has(r.laukId));
         initialized = true;
       }
     },

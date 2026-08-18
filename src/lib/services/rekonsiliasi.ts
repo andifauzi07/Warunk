@@ -211,6 +211,48 @@ export async function tandaiLibur(tanggal: string): Promise<RekonsiliasiHarian> 
   return createRekonsiliasi(tanggal, 'libur');
 }
 
+/**
+ * Mendapatkan jumlah porsi carry-over lauk tertentu pada tanggal tertentu.
+ * Mengembalikan 0 jika tidak ada baris detail atau carry-over 0.
+ */
+export async function getCarryOverForLauk(laukId: string, tanggal: string): Promise<number> {
+  const rek = await getRekonsiliasiByTanggal(tanggal);
+  if (!rek) return 0;
+  const { data, error } = await supabase
+    .from('detail_stok_harian')
+    .select('porsi_carry_over')
+    .eq('rekonsiliasi_id', rek.id)
+    .eq('lauk_id', laukId)
+    .maybeSingle();
+  if (error) throw error;
+  return (data?.porsi_carry_over as number) ?? 0;
+}
+
+/**
+ * Zero carry-over untuk lauk tertentu: set porsi_carry_over menjadi 0.
+ * Dipanggil saat deaktivasi lauk yang masih punya sisa dari kemarin.
+ * Sisa tidak dipindahkan ke porsi_basi_pagi karena constraint
+ * chk_basi_pagi (porsi_basi_pagi <= porsi_carry_over) tidak mengizinkannya.
+ */
+export async function zeroCarryOverForLauk(laukId: string, tanggal: string): Promise<void> {
+  const rek = await getRekonsiliasiByTanggal(tanggal);
+  if (!rek) return;
+  const { data: detail, error: fetchErr } = await supabase
+    .from('detail_stok_harian')
+    .select('id, porsi_carry_over')
+    .eq('rekonsiliasi_id', rek.id)
+    .eq('lauk_id', laukId)
+    .maybeSingle();
+  if (fetchErr) throw fetchErr;
+  if (!detail || detail.porsi_carry_over === 0) return;
+
+  const { error } = await supabase
+    .from('detail_stok_harian')
+    .update({ porsi_carry_over: 0 })
+    .eq('id', detail.id);
+  if (error) throw error;
+}
+
 /** Get-or-create rekonsiliasi + detail untuk tanggal tertentu (alur pagi/malam). */
 export async function siapkanHari(
   tanggal: string,

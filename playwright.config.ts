@@ -19,7 +19,7 @@ export default defineConfig({
   projects: [
     {
       name: 'terautentikasi',
-      testMatch: /(day-cycle|validation)\.spec\.ts/,
+      testMatch: /(day-cycle|validation|lauk-deactivation)\.spec\.ts/,
       use: { storageState: 'e2e/.auth/user.json' },
     },
     {

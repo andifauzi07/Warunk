@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
-import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue';
+import RingkasanHarianCard from '../../components/RingkasanHarianCard.vue';
 
 describe('RingkasanHarianCard', () => {
   const baseProps = {

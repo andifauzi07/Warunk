@@ -3,9 +3,9 @@ import { mount } from '@vue/test-utils';
 import { createRouter, createMemoryHistory, type Router } from 'vue-router';
 import { defineComponent } from 'vue';
 import { createPinia, setActivePinia } from 'pinia';
-import { useSessionStore } from '@/stores/session';
-import { useAuthGuard } from '@/composables/useAuthGuard';
-import { arahkanKe } from '@/lib/sessionNavigation';
+import { useSessionStore } from '../../stores/session';
+import { useAuthGuard } from '../../composables/useAuthGuard';
+import { arahkanKe } from '../../lib/sessionNavigation';
 
 vi.mock('@/lib/supabase', () => {
   const auth = {
@@ -17,7 +17,7 @@ vi.mock('@/lib/supabase', () => {
   return { supabase: { auth }, currentUserId: vi.fn().mockResolvedValue(null) };
 });
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../lib/supabase';
 
 const Dummy = defineComponent({ template: '<div>stub</div>' });
 

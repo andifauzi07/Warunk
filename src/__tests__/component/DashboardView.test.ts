@@ -2,14 +2,14 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { mount, flushPromises, type VueWrapper } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
-import DashboardView from '@/views/DashboardView.vue';
+import DashboardView from '../../views/DashboardView.vue';
 import {
   fetchRingkasanHarian,
   fetchRekonsiliasiRange,
   fetchRankingLauk,
-} from '@/lib/services/analitik';
-import { fetchPengaturan } from '@/lib/services/pengaturan';
-import { tambahHari } from '@/lib/format';
+} from '../..//lib/services/analitik';
+import { fetchPengaturan } from '../..//lib/services/pengaturan';
+import { tambahHari } from '../..//lib/format';
 
 vi.mock('@/lib/supabase', () => ({
   supabase: {},

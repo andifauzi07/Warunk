@@ -50,19 +50,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
-      - name: Create Pull Request
-        id: create_pr
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name }}
-          title: "Auto PR: ${{ github.ref_name }}"
-          body: "PR ini dibuat otomatis oleh GitHub Actions setelah unit test berhasil."
-          base: main
-
-      - name: Enable Auto-Merge
-        if: steps.create_pr.outputs.pull-request-number != ''
+      # Menggunakan GitHub CLI untuk membuat PR dari branch lokal Anda & mengaktifkan merge commit
+      - name: Create PR and Enable Auto-Merge (Keep All Commits)
         run: |
-          gh pr merge ${{ steps.create_pr.outputs.pull-request-number }} --auto --merge
+          gh pr create \
+            --base main \
+            --head ${{ github.ref_name }} \
+            --title "Auto PR: ${{ github.ref_name }}" \
+            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." || true
+            
+          gh pr merge ${{ github.ref_name }} --auto --merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

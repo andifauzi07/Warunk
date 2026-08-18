@@ -8,6 +8,11 @@ import { fetchMasterLauk } from '../../lib/services/masterLauk';
 import { fetchPengaturan } from '../../lib/services/pengaturan';
 import type { MasterLauk } from '../../types/database';
 
+vi.mock('vue-router', () => ({
+  useRoute: vi.fn().mockReturnValue({ query: {} }),
+  useRouter: vi.fn().mockReturnValue({ push: vi.fn(), replace: vi.fn() }),
+}));
+
 vi.mock('@/lib/supabase', () => ({
   supabase: {},
   currentUserId: vi.fn().mockResolvedValue('user-1'),
@@ -129,12 +134,11 @@ describe('InputMalamView', () => {
     expect(wrapper.text()).not.toContain('Simpan & Kunci Hari Ini');
   });
 
-  it('hari malam_selesai menampilkan ringkasan read-only tanpa tombol simpan', async () => {
+  it('hari malam_selesai menampilkan ringkasan read-only dengan tombol Ubah Input Malam', async () => {
     const wrapper = await mountView('malam_selesai');
     expect(wrapper.text()).toContain('Input malam tersimpan');
-    expect(wrapper.text()).toContain('Ringkasan Hari Ini');
     expect(wrapper.text()).not.toContain('Simpan & Kunci Hari Ini');
-    expect(wrapper.find('button').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Ubah Input Malam');
   });
 
   it('hari pagi_selesai menampilkan opname dengan tombol simpan', async () => {
@@ -151,7 +155,6 @@ describe('InputMalamView', () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain('Melebihi stok!');
-    const save = wrapper.find('button');
     const buttons = wrapper.findAll('button');
     const simpanBtn = buttons.find((b) => b.text().includes('Simpan & Kunci Hari Ini'));
     expect(simpanBtn?.attributes('disabled')).toBeDefined();
@@ -177,12 +180,22 @@ describe('InputMalamView', () => {
     expect(wrapper.text()).not.toContain('Dimakan sendiri');
   });
 
-  it('menampilkan peringatan HPP estimasi saat modal belum diisi', async () => {
+  it('field modal bahan tidak ditampilkan di view malam', async () => {
     const wrapper = await mountView('pagi_selesai');
-    const rows = (wrapper.vm as unknown as { rows: Array<Record<string, number>> }).rows;
-    rows[0].porsiBaru = 10;
-    rows[0].modalBaru = 0;
+    expect(wrapper.text()).not.toContain('Modal bahan');
+  });
+
+  it('tombol Ubah Input Malam muncul saat malam_selesai', async () => {
+    const wrapper = await mountView('malam_selesai');
+    const ubahBtn = wrapper.findAll('button').find((b) => b.text().includes('Ubah Input Malam'));
+    expect(ubahBtn?.exists()).toBe(true);
+  });
+
+  it('klik Ubah Input Malam menampilkan dialog konfirmasi', async () => {
+    const wrapper = await mountView('malam_selesai');
+    const ubahBtn = wrapper.findAll('button').find((b) => b.text().includes('Ubah Input Malam'));
+    await ubahBtn!.trigger('click');
     await flushPromises();
-    expect(wrapper.text()).toContain('HPP memakai estimasi');
+    expect(document.body.textContent).toContain('Yakin ingin mengedit input malam hari ini');
   });
 });

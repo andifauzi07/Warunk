@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { storeToRefs } from 'pinia';
 import { useMasterLauk } from '@/composables/useMasterLauk';
+import { useHariStore } from '@/stores/hari';
 import { formatRupiah, pesanError } from '@/lib/format';
+import { getCarryOverForLauk, zeroCarryOverForLauk } from '@/lib/services/rekonsiliasi';
+import AlertDialog from '@/components/AlertDialog.vue';
 import type { MasterLauk } from '@/types/database';
 
 const { data: laukList, isLoading, error, tambah, ubah } = useMasterLauk();
+const { tanggal } = storeToRefs(useHariStore());
 
 const showForm = ref(false);
 const editing = ref<MasterLauk | null>(null);
@@ -71,8 +76,51 @@ async function simpan() {
   }
 }
 
+const toggleError = ref('');
+const alertDialog = ref({ open: false, pesan: '' });
+let pendingToggle: { lauk: MasterLauk; carryOver: number } | null = null;
+
 async function toggleAktif(lauk: MasterLauk) {
-  await ubah.mutateAsync({ id: lauk.id, input: { is_active: !lauk.is_active } });
+  toggleError.value = '';
+
+  if (lauk.is_active) {
+    const hari = await import('@/lib/services/rekonsiliasi').then((m) =>
+      m.getRekonsiliasiByTanggal(tanggal.value),
+    );
+    if (hari?.status === 'malam_selesai') {
+      toggleError.value = 'Hari ini sudah terkunci. Tidak bisa menonaktifkan lauk.';
+      return;
+    }
+
+    const carryOver = await getCarryOverForLauk(lauk.id, tanggal.value);
+    const pesan =
+      carryOver > 0
+        ? 'Menonaktifkan lauk ini, akan membuat sisa porsi kemarin dianggap basi/rusak !'
+        : 'Yakin menonaktifkan lauk ini ?';
+
+    pendingToggle = { lauk, carryOver };
+    alertDialog.value = { open: true, pesan };
+    return;
+  }
+
+  await ubah.mutateAsync({ id: lauk.id, input: { is_active: true } });
+}
+
+async function konfirmasiToggle() {
+  const pending = pendingToggle;
+  pendingToggle = null;
+  alertDialog.value = { open: false, pesan: '' };
+  if (!pending) return;
+
+  if (pending.carryOver > 0) {
+    await zeroCarryOverForLauk(pending.lauk.id, tanggal.value);
+  }
+  await ubah.mutateAsync({ id: pending.lauk.id, input: { is_active: false } });
+}
+
+function batalToggle() {
+  pendingToggle = null;
+  alertDialog.value = { open: false, pesan: '' };
 }
 
 const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).length ?? 0);
@@ -94,6 +142,7 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
     </div>
 
     <p v-if="error" class="mt-4 text-sm text-red-600">{{ pesanError(error) }}</p>
+    <p v-if="toggleError" class="mt-4 text-sm text-red-600">{{ toggleError }}</p>
 
     <div v-if="isLoading" class="mt-6 text-center text-zinc-500">Memuat…</div>
 
@@ -196,5 +245,12 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
         </div>
       </div>
     </div>
+
+    <AlertDialog
+      :open="alertDialog.open"
+      :pesan="alertDialog.pesan"
+      @confirm="konfirmasiToggle"
+      @cancel="batalToggle"
+    />
   </div>
 </template>

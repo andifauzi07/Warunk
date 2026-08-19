@@ -41,8 +41,8 @@ jobs:
   automerge:
     name: Auto Create & Merge PR
     needs: unit-component
-    # if: github.event_name == 'push' && github.ref_name != 'main'
-    if: github.ref_name != 'main' && github.event.repository.fork == false
+    # Memastikan skrip tidak berjalan langsung di branch main
+    if: github.ref_name != 'main' && github.head_ref != 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -51,22 +51,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
-      # Menggunakan GitHub CLI untuk membuat PR dari branch lokal Anda & mengaktifkan merge commit
-      - name: Create PR and Enable Auto-Merge (Keep All Commits)
+      - name: Create PR and Merge Safely
         run: |
-          # 1. Buat PR dan tangkap URL-nya. Jika PR sudah ada, ambil URL yang sudah ada.
+          # SOLUSI UTAMA: Mengambil nama branch asli baik dari event push maupun pull_request
+          TARGET_BRANCH="${{ github.head_ref || github.ref_name }}"
+          echo "Branch fitur terdeteksi: $TARGET_BRANCH"
+          
+          # 1. Buat PR baru. Jika sudah ada, ambil URL PR yang sudah terbuka agar tidak eror
           PR_URL=$(gh pr create \
             --base main \
-            --head ${{ github.ref_name }} \
-            --title "Auto PR: ${{ github.ref_name }}" \
-            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." 2>/dev/null || gh pr view ${{ github.ref_name }} --json url --template '{{.url}}')
+            --head "$TARGET_BRANCH" \
+            --title "Auto PR: $TARGET_BRANCH" \
+            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." 2>/dev/null || gh pr view "$TARGET_BRANCH" --json url --template '{{.url}}')
           
-          echo "PR Created/Found: $PR_URL"
+          echo "Link PR: $PR_URL"
           
-          # 2. Berikan jeda 3 detik agar sistem internal GitHub mendaftarkan PR dengan stabil
+          # 2. Beri jeda 3 detik agar sistem internal GitHub menyinkronkan data PR
           sleep 3
           
-          # 3. Jalankan merge langsung (tanpa --auto) agar tidak terikat status pengecekan eksternal Vercel
-          gh pr merge ${{ github.ref_name }} --merge --disable-auto
+          # 3. Langsung lakukan merge tanpa fitur --auto agar tidak tertahan oleh antrean Vercel
+          gh pr merge "$TARGET_BRANCH" --merge --disable-auto
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

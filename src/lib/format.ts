@@ -28,6 +28,11 @@ export function pesanError(e: unknown): string {
   return 'Terjadi kesalahan';
 }
 
+export function parseCurrency(value: string): number {
+  const digits = value.replace(/\D/g, '');
+  return digits === '' ? 0 : Number(digits);
+}
+
 export function tambahHari(tanggal: string, hari: number): string {
   const d = new Date(tanggal + 'T00:00:00');
   d.setDate(d.getDate() + hari);

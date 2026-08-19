@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { formatAngka, formatRupiah, pesanError, tambahHari, tanggalBaca } from '../lib/format';
+import {
+  formatAngka,
+  formatRupiah,
+  parseCurrency,
+  pesanError,
+  tambahHari,
+  tanggalBaca,
+} from '../lib/format';
 
 describe('formatRupiah', () => {
   it('memformat angka menjadi Rupiah id-ID', () => {
@@ -72,5 +79,27 @@ describe('tambahHari', () => {
 
   it('zero offset mengembalikan tanggal sama', () => {
     expect(tambahHari('2026-08-17', 0)).toBe('2026-08-17');
+  });
+});
+
+describe('parseCurrency', () => {
+  it('parse angka dengan pemisah ribuan', () => {
+    expect(parseCurrency('170.000')).toBe(170000);
+  });
+
+  it('parse string kosong menjadi 0', () => {
+    expect(parseCurrency('')).toBe(0);
+  });
+
+  it('parse string dengan karakter non-digit', () => {
+    expect(parseCurrency('Rp 170.000')).toBe(170000);
+  });
+
+  it('parse angka tanpa pemisah', () => {
+    expect(parseCurrency('170000')).toBe(170000);
+  });
+
+  it('parse 0', () => {
+    expect(parseCurrency('0')).toBe(0);
   });
 });

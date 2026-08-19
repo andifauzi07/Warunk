@@ -169,15 +169,8 @@ function bukaEditMalam() {
         </RouterLink>
       </div>
 
-      <RouterLink
-        v-if="status !== 'malam_selesai'"
-        to="/malam"
-        class="mt-3 block w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-center text-base text-zinc-600"
-      >
-        Input Malam
-      </RouterLink>
       <button
-        v-else
+        v-if="status === 'malam_selesai'"
         class="mt-3 block w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-center text-base text-zinc-600 active:bg-zinc-100"
         @click="tanyaEditMalam"
       >

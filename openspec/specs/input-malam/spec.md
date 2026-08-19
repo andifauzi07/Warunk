@@ -74,7 +74,17 @@ Sistem SHALL menampilkan peringatan inline pada layar malam jika ada lauk dengan
 
 ### Requirement: Simpan dan Kunci Hari
 
-Sistem SHALL mengunci hari dengan satu aksi "Simpan & Kunci", mengubah status menjadi `malam_selesai`, dan menampilkan Ringkasan Hari Ini seketika di layar yang sama, dengan menyertakan seluruh state baris pada setiap penulisan baris detail (kolom pagi yang sudah tersimpan, `user_id`, `rekonsiliasi_id`, `lauk_id`, dan nilai input malam) sehingga kandidat penulisan selalu valid terhadap RLS, NOT NULL, dan CHECK — baik untuk baris baru maupun baris yang sudah ada. Setelah terkunci, tidak ada perubahan data hari tersebut.
+Sistem SHALL mengunci hari dengan satu aksi "Simpan & Kunci", mengubah status menjadi `malam_selesai`, dan menampilkan Ringkasan Hari Ini seketika di layar yang sama, dengan menyertakan seluruh state baris pada setiap penulisan baris detail (kolom pagi yang sudah tersimpan, `user_id`, `rekonsiliasi_id`, `lauk_id`, dan nilai input malam) sehingga kandidat penulisan selalu valid terhadap RLS, NOT NULL, dan CHECK — baik untuk baris baru maupun baris yang sudah ada. Setelah terkunci, tidak ada perubahan data hari tersebut. Tombol simpan SHALL disabled secara otomatis jika `uangLaci` kosong, null, atau bernilai negatif.
+
+#### Scenario: Tombol simpan disabled saat uang laci kosong
+
+- **WHEN** pengguna membuka Input Malam dan `uangLaci` masih null atau kosong
+- **THEN** tombol "Simpan & Kunci Hari Ini" dalam keadaan disabled (tidak dapat diklik)
+
+#### Scenario: Tombol simpan aktif setelah uang laci diisi
+
+- **WHEN** pengguna mengisi total uang di laci dengan nilai >= 0
+- **THEN** tombol "Simpan & Kunci Hari Ini" menjadi aktif (selain validasi lain terpenuhi)
 
 #### Scenario: Simpan malam berhasil
 

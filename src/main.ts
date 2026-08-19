@@ -5,11 +5,13 @@ import { registerSW } from 'virtual:pwa-register';
 import App from './App.vue';
 import router from './router';
 import { useSessionStore } from './stores/session';
+import { vCurrency } from './directives/currency';
 import './style.css';
 
 registerSW({ immediate: true });
 
 const app = createApp(App);
+app.directive('currency', vCurrency);
 app.use(createPinia());
 app.use(VueQueryPlugin);
 

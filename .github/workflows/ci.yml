@@ -41,7 +41,8 @@ jobs:
   automerge:
     name: Auto Create & Merge PR
     needs: unit-component
-    if: github.event_name == 'push' && github.ref_name != 'main'
+    # if: github.event_name == 'push' && github.ref_name != 'main'
+    if: github.ref_name != 'main' && github.event.repository.fork == false
     runs-on: ubuntu-latest
     permissions:
       contents: write

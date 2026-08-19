@@ -41,8 +41,7 @@ jobs:
   automerge:
     name: Auto Create & Merge PR
     needs: unit-component
-    # Memastikan skrip tidak berjalan langsung di branch main
-    if: github.ref_name != 'main' && github.head_ref != 'main'
+    if: github.event_name == 'push' && github.ref_name != 'main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -51,25 +50,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
-      - name: Create PR and Merge Safely
+      # Menggunakan GitHub CLI untuk membuat PR dari branch lokal Anda & mengaktifkan merge commit
+      - name: Create PR and Enable Auto-Merge (Keep All Commits)
         run: |
-          # SOLUSI UTAMA: Mengambil nama branch asli baik dari event push maupun pull_request
-          TARGET_BRANCH="${{ github.head_ref || github.ref_name }}"
-          echo "Branch fitur terdeteksi: $TARGET_BRANCH"
-          
-          # 1. Buat PR baru. Jika sudah ada, ambil URL PR yang sudah terbuka agar tidak eror
-          PR_URL=$(gh pr create \
+          gh pr create \
             --base main \
-            --head "$TARGET_BRANCH" \
-            --title "Auto PR: $TARGET_BRANCH" \
-            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." 2>/dev/null || gh pr view "$TARGET_BRANCH" --json url --template '{{.url}}')
-          
-          echo "Link PR: $PR_URL"
-          
-          # 2. Beri jeda 3 detik agar sistem internal GitHub menyinkronkan data PR
-          sleep 3
-          
-          # 3. Langsung lakukan merge tanpa fitur --auto agar tidak tertahan oleh antrean Vercel
-          gh pr merge "$TARGET_BRANCH" --merge --disable-auto
+            --head ${{ github.ref_name }} \
+            --title "Auto PR: ${{ github.ref_name }}" \
+            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." || true
+            
+          gh pr merge ${{ github.ref_name }} --auto --merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -72,12 +72,6 @@ function bukaEditMalam() {
       </div>
       <div class="flex gap-1">
         <RouterLink
-          to="/lauk"
-          class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-white active:bg-zinc-900"
-        >
-          Lauk
-        </RouterLink>
-        <RouterLink
           to="/pengaturan"
           class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-white active:bg-zinc-900"
         >

@@ -53,7 +53,7 @@ export function toItemKalkulasi(r: RowDetail): ItemKalkulasi {
 }
 
 export function useDetailRows(tanggal: Ref<string>) {
-  const { data: laukList, isLoading: laukLoading } = useMasterLauk();
+  const { data: laukList, isLoading: laukLoading, refreshHariAfterTambah } = useMasterLauk();
   const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active));
   const hari = useHariIni(tanggal, laukAktif);
   const { error: hariError } = hari;
@@ -68,6 +68,15 @@ export function useDetailRows(tanggal: Ref<string>) {
         const activeIds = new Set(laukAktif.value.map((l) => l.id));
         rows.value = initRowsFromDetail(d).filter((r) => activeIds.has(r.laukId));
         initialized = true;
+      } else if (initialized && d.length > 0) {
+        const existingLaukIds = new Set(rows.value.map((r) => r.laukId));
+        const activeIds = new Set(laukAktif.value.map((l) => l.id));
+        const newItems = initRowsFromDetail(d).filter(
+          (r) => !existingLaukIds.has(r.laukId) && activeIds.has(r.laukId),
+        );
+        if (newItems.length > 0) {
+          rows.value = [...rows.value, ...newItems];
+        }
       }
     },
     { immediate: true },
@@ -85,5 +94,6 @@ export function useDetailRows(tanggal: Ref<string>) {
     hari,
     toItemKalkulasi,
     resetInitialized,
+    refreshHariAfterTambah,
   };
 }

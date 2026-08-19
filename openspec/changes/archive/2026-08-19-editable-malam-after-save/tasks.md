@@ -44,4 +44,4 @@
 
 - [x] 7.1 Run linter (`bun run lint`) dan pasti tidak ada error.
 - [x] 7.2 Run typecheck (`bun run typecheck`) dan pasti tidak ada error.
-- [ ] 7.3 Manual test: buka hari dengan status `malam_selesai`, klik "Koreksi Input Malam" dari HomeView, konfirmasi dialog, edit field, simpan, verifikasi agregat terupdate.
+- [x] 7.3 Manual test: buka hari dengan status `malam_selesai`, klik "Koreksi Input Malam" dari HomeView, konfirmasi dialog, edit field, simpan, verifikasi agregat terupdate.

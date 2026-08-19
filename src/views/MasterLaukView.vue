@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useMasterLauk } from '@/composables/useMasterLauk';
 import { useHariStore } from '@/stores/hari';
-import { formatRupiah, pesanError } from '@/lib/format';
+import { formatRupiah, parseCurrency, pesanError } from '@/lib/format';
 import { getCarryOverForLauk, zeroCarryOverForLauk } from '@/lib/services/rekonsiliasi';
 import AlertDialog from '@/components/AlertDialog.vue';
 import type { MasterLauk } from '@/types/database';
@@ -49,8 +49,8 @@ async function simpan() {
     return;
   }
   simpanLoading.value = true;
-  const harga = Number(hargaJual.value) || 0;
-  const hpp = Number(hppEstimasi.value) || 0;
+  const harga = parseCurrency(hargaJual.value);
+  const hpp = parseCurrency(hppEstimasi.value);
   try {
     if (editing.value) {
       await ubah.mutateAsync({
@@ -205,9 +205,9 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
             <span class="text-sm font-medium">Harga jual per porsi (Rp)</span>
             <input
               v-model="hargaJual"
-              type="number"
+              v-currency
+              type="text"
               inputmode="numeric"
-              min="0"
               class="rounded-lg border border-zinc-300 px-4 py-3 text-base"
               placeholder="10000"
             />
@@ -217,9 +217,9 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
             <span class="text-sm font-medium">HPP estimasi per porsi (Rp)</span>
             <input
               v-model="hppEstimasi"
-              type="number"
+              v-currency
+              type="text"
               inputmode="numeric"
-              min="0"
               class="rounded-lg border border-zinc-300 px-4 py-3 text-base"
               placeholder="6500"
             />

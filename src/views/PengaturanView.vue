@@ -2,7 +2,7 @@
 import { reactive, ref, watch } from 'vue';
 import { usePengaturan } from '@/composables/usePengaturan';
 import { useSessionStore } from '@/stores/session';
-import { pesanError } from '@/lib/format';
+import { formatAngka, parseCurrency, pesanError } from '@/lib/format';
 
 const { data, isLoading, simpan } = usePengaturan();
 const session = useSessionStore();
@@ -87,12 +87,15 @@ async function keluar() {
       <label class="block">
         <span class="text-sm font-medium">Modal kembalian (uang kecil di laci)</span>
         <input
-          v-model.number="form.modal_kembalian_default"
-          type="number"
+          v-currency
+          :value="formatAngka(form.modal_kembalian_default ?? 0)"
+          type="text"
           inputmode="numeric"
-          min="0"
           class="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-3 text-base tabular-nums"
           placeholder="Contoh: 150000"
+          @input="
+            form.modal_kembalian_default = parseCurrency(($event.target as HTMLInputElement).value)
+          "
         />
         <span class="mt-1 block text-xs text-zinc-500">
           Dipakai untuk hari baru; hari yang sudah terkunci tetap memakai nilai lamanya.

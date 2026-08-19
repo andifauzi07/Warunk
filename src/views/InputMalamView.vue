@@ -16,7 +16,7 @@ import {
   stokAktifAwal,
 } from '@/lib/engine';
 import type { ItemKalkulasi } from '@/lib/engine';
-import { formatRupiah, pesanError } from '@/lib/format';
+import { formatAngka, formatRupiah, parseCurrency, pesanError } from '@/lib/format';
 import type { RowDetail } from '@/composables/useDetailRows';
 
 const route = useRoute();
@@ -103,10 +103,6 @@ async function simpan() {
     simpanError.value = 'Ada lauk yang jumlahnya melebihi stok aktif. Periksa kembali.';
     return;
   }
-  if (uangLaci.value === null || uangLaci.value < 0) {
-    simpanError.value = 'Uang di laci wajib diisi.';
-    return;
-  }
   simpanLoading.value = true;
   try {
     const items = rows.value.map((r) => {
@@ -127,7 +123,7 @@ async function simpan() {
     });
     await hari.simpanMalam.mutateAsync({
       items,
-      uangLaci: uangLaci.value,
+      uangLaci: uangLaci.value ?? 0,
       uangDigital: terimaDigital.value ? (uangDigital.value ?? 0) : 0,
       modalKembalianPakai: modalKembalian.value,
     });
@@ -287,23 +283,25 @@ async function simpan() {
         <label class="flex items-center justify-between gap-3">
           <span class="text-sm font-medium">Total uang di laci</span>
           <input
-            v-model.number="uangLaci"
-            type="number"
+            v-currency
+            :value="formatAngka(uangLaci ?? 0)"
+            type="text"
             inputmode="numeric"
-            min="0"
             class="no-spinner w-40 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
             placeholder="0"
+            @input="uangLaci = parseCurrency(($event.target as HTMLInputElement).value)"
           />
         </label>
         <label v-if="terimaDigital" class="mt-3 flex items-center justify-between gap-3">
           <span class="text-sm font-medium">Uang digital masuk (QRIS/GoPay)</span>
           <input
-            v-model.number="uangDigital"
-            type="number"
+            v-currency
+            :value="formatAngka(uangDigital ?? 0)"
+            type="text"
             inputmode="numeric"
-            min="0"
             class="no-spinner w-40 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
             placeholder="0"
+            @input="uangDigital = parseCurrency(($event.target as HTMLInputElement).value)"
           />
         </label>
         <p class="mt-3 text-xs text-zinc-500">
@@ -312,7 +310,7 @@ async function simpan() {
       </div>
 
       <button
-        :disabled="simpanLoading || !semuaValid"
+        :disabled="simpanLoading || !semuaValid || uangLaci === null || uangLaci < 0"
         class="mt-4 w-full rounded-xl bg-green-600 px-4 py-4 text-base font-bold text-white active:bg-green-700"
         @click="simpan"
       >
@@ -397,23 +395,25 @@ async function simpan() {
         <label class="flex items-center justify-between gap-3">
           <span class="text-sm font-medium">Total uang di laci</span>
           <input
-            v-model.number="uangLaci"
-            type="number"
+            v-currency
+            :value="formatAngka(uangLaci ?? 0)"
+            type="text"
             inputmode="numeric"
-            min="0"
             class="no-spinner w-40 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
             placeholder="0"
+            @input="uangLaci = parseCurrency(($event.target as HTMLInputElement).value)"
           />
         </label>
         <label v-if="terimaDigital" class="mt-3 flex items-center justify-between gap-3">
           <span class="text-sm font-medium">Uang digital masuk (QRIS/GoPay)</span>
           <input
-            v-model.number="uangDigital"
-            type="number"
+            v-currency
+            :value="formatAngka(uangDigital ?? 0)"
+            type="text"
             inputmode="numeric"
-            min="0"
             class="no-spinner w-40 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
             placeholder="0"
+            @input="uangDigital = parseCurrency(($event.target as HTMLInputElement).value)"
           />
         </label>
         <p class="mt-3 text-xs text-zinc-500">
@@ -423,7 +423,7 @@ async function simpan() {
 
       <button
         v-if="!terkunci"
-        :disabled="simpanLoading || !semuaValid"
+        :disabled="simpanLoading || !semuaValid || uangLaci === null || uangLaci < 0"
         class="mt-4 w-full rounded-xl bg-green-600 px-4 py-4 text-base font-bold text-white active:bg-green-700"
         @click="simpan"
       >

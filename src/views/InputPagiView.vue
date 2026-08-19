@@ -5,7 +5,7 @@ import { useDetailRows } from '@/composables/useDetailRows';
 import { useHariStore } from '@/stores/hari';
 import Stepper from '@/components/Stepper.vue';
 import { hppBaruPorsi, stokAktifAwal } from '@/lib/engine';
-import { formatRupiah, pesanError } from '@/lib/format';
+import { formatAngka, formatRupiah, parseCurrency, pesanError } from '@/lib/format';
 import type { RowDetail } from '@/composables/useDetailRows';
 
 const { tanggal } = storeToRefs(useHariStore());
@@ -55,6 +55,7 @@ async function simpan() {
 }
 
 const adaLaukAktif = computed(() => laukAktif.value.length > 0);
+const semuaModalTerisi = computed(() => rows.value.every((r) => r.modalBaru > 0));
 </script>
 
 <template>
@@ -172,12 +173,13 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0);
         <label class="mt-3 flex items-center justify-between gap-3">
           <span class="text-sm font-medium">Total modal bahan (Rp)</span>
           <input
-            v-model.number="row.modalBaru"
-            type="number"
+            v-currency
+            :value="formatAngka(row.modalBaru)"
+            type="text"
             inputmode="numeric"
-            min="0"
             class="no-spinner w-36 rounded-lg border border-zinc-300 px-3 py-3 text-right text-base tabular-nums"
             placeholder="0"
+            @input="row.modalBaru = parseCurrency(($event.target as HTMLInputElement).value)"
           />
         </label>
 
@@ -188,7 +190,7 @@ const adaLaukAktif = computed(() => laukAktif.value.length > 0);
 
       <button
         v-if="rows.length > 0 && !terkunci"
-        :disabled="simpanLoading"
+        :disabled="simpanLoading || !semuaModalTerisi"
         class="mt-2 rounded-xl bg-green-600 px-4 py-4 text-base font-bold text-white active:bg-green-700"
         @click="simpan"
       >

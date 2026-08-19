@@ -60,7 +60,17 @@ Sistem SHALL menyediakan input jumlah porsi masak baru per lauk menggunakan step
 
 ### Requirement: Simpan Input Pagi
 
-Sistem SHALL menyimpan input pagi dengan satu aksi dan mengubah status hari menjadi `pagi_selesai`, dengan menyertakan seluruh state baris (termasuk `user_id`, `rekonsiliasi_id`, `lauk_id`, `porsi_carry_over`, `hpp_carry_over_porsi`) pada setiap penulisan baris detail sehingga kandidat penulisan selalu valid terhadap RLS, NOT NULL, dan CHECK — baik untuk baris baru maupun baris yang sudah ada. Bila penyimpanan gagal, sistem SHALL menampilkan pesan kesalahan yang mencerminkan penyebab sesungguhnya, bukan pesan generik.
+Sistem SHALL menyimpan input pagi dengan satu aksi dan mengubah status hari menjadi `pagi_selesai`, dengan menyertakan seluruh state baris (termasuk `user_id`, `rekonsiliasi_id`, `lauk_id`, `porsi_carry_over`, `hpp_carry_over_porsi`) pada setiap penulisan baris detail sehingga kandidat penulisan selalu valid terhadap RLS, NOT NULL, dan CHECK — baik untuk baris baru maupun baris yang sudah ada. Bila penyimpanan gagal, sistem SHALL menampilkan pesan kesalahan yang mencerminkan penyebab sesungguhnya, bukan pesan generik. Tombol simpan SHALL disabled secara otomatis jika ada lauk dengan total modal bahan bernilai 0 atau kosong.
+
+#### Scenario: Tombol simpan disabled saat modal kosong
+
+- **WHEN** pengguna membuka Input Pagi dan terdapat lauk dengan `modalBaru` bernilai 0 atau kosong
+- **THEN** tombol "Selesai Input Pagi" dalam keadaan disabled (tidak dapat diklik)
+
+#### Scenario: Tombol simpan aktif setelah modal diisi
+
+- **WHEN** pengguna mengisi total modal bahan untuk semua lauk (nilai > 0)
+- **THEN** tombol "Selesai Input Pagi" menjadi aktif dan dapat diklik
 
 #### Scenario: Simpan input pagi
 

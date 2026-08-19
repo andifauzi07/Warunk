@@ -160,14 +160,12 @@ describe('InputMalamView', () => {
     expect(simpanBtn?.attributes('disabled')).toBeDefined();
   });
 
-  it('uang laci kosong menolak simpan dengan pesan', async () => {
+  it('uang laci kosong menonaktifkan tombol simpan', async () => {
     const wrapper = await mountView('pagi_selesai');
     const buttons = wrapper.findAll('button');
     const simpanBtn = buttons.find((b) => b.text().includes('Simpan & Kunci Hari Ini'));
     expect(simpanBtn?.exists()).toBe(true);
-    await simpanBtn!.trigger('click');
-    await flushPromises();
-    expect(wrapper.text()).toContain('Uang di laci wajib diisi.');
+    expect(simpanBtn?.attributes('disabled')).toBeDefined();
   });
 
   it('toggle makan sendiri menyembunyikan kolom konsumsi', async () => {

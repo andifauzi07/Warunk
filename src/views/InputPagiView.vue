@@ -4,12 +4,13 @@ import { storeToRefs } from 'pinia';
 import { useDetailRows } from '@/composables/useDetailRows';
 import { useHariStore } from '@/stores/hari';
 import Stepper from '@/components/Stepper.vue';
+import LaukFormSheet from '@/components/LaukFormSheet.vue';
 import { hppBaruPorsi, stokAktifAwal } from '@/lib/engine';
 import { formatAngka, formatRupiah, parseCurrency, pesanError } from '@/lib/format';
 import type { RowDetail } from '@/composables/useDetailRows';
 
 const { tanggal } = storeToRefs(useHariStore());
-const { rows, hariError, laukLoading, laukAktif, hari, toItemKalkulasi, resetInitialized } =
+const { rows, hariError, hari, toItemKalkulasi, resetInitialized, refreshHariAfterTambah } =
   useDetailRows(tanggal);
 
 function tandaiLayak(r: RowDetail) {
@@ -54,23 +55,35 @@ async function simpan() {
   }
 }
 
-const adaLaukAktif = computed(() => laukAktif.value.length > 0);
 const semuaModalTerisi = computed(() => rows.value.every((r) => r.modalBaru > 0));
+
+const showLaukForm = ref(false);
+
+async function handleLaukSaved() {
+  await refreshHariAfterTambah();
+}
 </script>
 
 <template>
   <div class="p-4 pb-20">
-    <h1 class="text-xl font-bold">Input Stok Pagi</h1>
-    <p class="text-sm text-zinc-500">Baseline stok untuk hari ini</p>
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-xl font-bold">Input Stok Pagi</h1>
+        <p class="text-sm text-zinc-500">Baseline stok untuk hari ini</p>
+      </div>
+
+      <RouterLink
+        v-if="terkunci"
+        to="/lauk"
+        class="rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white active:bg-zinc-900"
+      >
+        Daftar Lauk
+      </RouterLink>
+    </div>
 
     <p v-if="hariError" class="mt-4 text-sm text-red-600">{{ hariError }}</p>
     <p v-if="simpanError" class="mt-4 text-sm text-red-600">{{ simpanError }}</p>
 
-    <div v-if="!adaLaukAktif && !laukLoading" class="mt-8 text-center text-zinc-500">
-      Belum ada lauk aktif. Tambahkan di Master Lauk dulu.
-    </div>
-
-    <!-- Mode terkunci / ringkasan -->
     <div v-else-if="terkunci || tampilReview" class="mt-4 flex flex-col gap-3">
       <div
         v-if="terkunci"
@@ -171,7 +184,7 @@ const semuaModalTerisi = computed(() => rows.value.every((r) => r.modalBaru > 0)
         </div>
 
         <label class="mt-3 flex items-center justify-between gap-3">
-          <span class="text-sm font-medium">Total modal bahan (Rp)</span>
+          <span class="text-sm font-medium">Total modal keseluruhan (Rp)</span>
           <input
             v-currency
             :value="formatAngka(row.modalBaru)"
@@ -183,10 +196,21 @@ const semuaModalTerisi = computed(() => rows.value.every((r) => r.modalBaru > 0)
           />
         </label>
 
-        <div class="mt-3 border-t border-dashed border-zinc-200 pt-2 text-sm text-zinc-600">
+        <div class="mt-3 border-t border-dashed border-zinc-200 py-2 text-sm text-zinc-600">
           Stok aktif hari ini: <strong>{{ stokAktifAwal(toItemKalkulasi(row)) }} porsi</strong>
         </div>
+        <div class="border-t border-dashed border-zinc-200 pt-2 text-sm text-zinc-600">
+          Estimasi HPP/Porsi : <strong>{{ formatRupiah(row.hppEstimasi) }}</strong>
+        </div>
       </div>
+
+      <button
+        v-if="!terkunci"
+        class="rounded-lg border border-dashed border-zinc-300 px-4 py-3 text-sm text-zinc-500 active:bg-zinc-50"
+        @click="showLaukForm = true"
+      >
+        + Tambah Lauk Baru
+      </button>
 
       <button
         v-if="rows.length > 0 && !terkunci"
@@ -197,5 +221,7 @@ const semuaModalTerisi = computed(() => rows.value.every((r) => r.modalBaru > 0)
         {{ simpanLoading ? 'Menyimpan…' : 'Selesai Input Pagi' }}
       </button>
     </div>
+
+    <LaukFormSheet v-model:open="showLaukForm" @saved="handleLaukSaved" />
   </div>
 </template>

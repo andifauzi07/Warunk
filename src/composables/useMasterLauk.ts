@@ -1,3 +1,4 @@
+import { nextTick } from 'vue';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query';
 import * as svc from '@/lib/services/masterLauk';
 import { QUERY_DEFAULTS } from '@/lib/queryConfig';
@@ -30,12 +31,19 @@ export function useMasterLauk() {
     onSuccess: () => invalidateTerkait(qc),
   });
 
+  async function refreshHariAfterTambah() {
+    await qc.refetchQueries({ queryKey: KEY });
+    await nextTick();
+    qc.invalidateQueries({ queryKey: ['hari-ini'] });
+  }
+
   return {
     data: q.data,
     isLoading: q.isLoading,
     error: q.error,
     tambah,
     ubah,
+    refreshHariAfterTambah,
   };
 }
 

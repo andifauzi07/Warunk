@@ -110,7 +110,8 @@ describe('InputPagiView', () => {
 
   it('tombol Ubah Input Pagi kembali ke mode edit', async () => {
     const wrapper = await mountView('pagi_selesai');
-    await wrapper.find('button').trigger('click');
+    const ubahBtn = wrapper.findAll('button').find((b) => b.text().includes('Ubah Input Pagi'));
+    await ubahBtn!.trigger('click');
     await flushPromises();
     expect(wrapper.text()).toContain('Selesai Input Pagi');
   });

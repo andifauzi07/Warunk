@@ -134,7 +134,7 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
         <p class="text-sm text-zinc-500">{{ jumlahAktif }} lauk aktif</p>
       </div>
       <button
-        class="rounded-lg bg-green-600 px-4 py-3 text-base font-semibold text-white active:bg-green-700"
+        class="rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white active:bg-green-700"
         @click="mulaiTambah"
       >
         + Lauk

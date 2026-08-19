@@ -53,12 +53,19 @@ jobs:
       # Menggunakan GitHub CLI untuk membuat PR dari branch lokal Anda & mengaktifkan merge commit
       - name: Create PR and Enable Auto-Merge (Keep All Commits)
         run: |
-          gh pr create \
+          # 1. Buat PR dan tangkap URL-nya. Jika PR sudah ada, ambil URL yang sudah ada.
+          PR_URL=$(gh pr create \
             --base main \
             --head ${{ github.ref_name }} \
             --title "Auto PR: ${{ github.ref_name }}" \
-            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." || true
-            
-          gh pr merge ${{ github.ref_name }} --auto --merge
+            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." 2>/dev/null || gh pr view ${{ github.ref_name }} --json url --template '{{.url}}')
+          
+          echo "PR Created/Found: $PR_URL"
+          
+          # 2. Berikan jeda 3 detik agar sistem internal GitHub mendaftarkan PR dengan stabil
+          sleep 3
+          
+          # 3. Jalankan merge langsung (tanpa --auto) agar tidak terikat status pengecekan eksternal Vercel
+          gh pr merge ${{ github.ref_name }} --merge --disable-auto
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

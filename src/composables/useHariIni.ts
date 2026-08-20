@@ -62,6 +62,17 @@ export function useHariIni(tanggal: Ref<string>, laukAktif: Ref<MasterLauk[]>) {
     },
   });
 
+  const updateMalam = useMutation({
+    mutationFn: async () => {
+      const rek = rekonsiliasi.value;
+      if (!rek) throw new Error('Hari belum disiapkan');
+      await svc.updateStatusRekonsiliasi(rek.id, 'pagi_selesai');
+    },
+    onSuccess: () => {
+      invalidateHari();
+    },
+  });
+
   return {
     rekonsiliasi,
     detail,
@@ -71,5 +82,6 @@ export function useHariIni(tanggal: Ref<string>, laukAktif: Ref<MasterLauk[]>) {
     refetch: q.refetch,
     simpanPagi,
     simpanMalam,
+    updateMalam,
   };
 }

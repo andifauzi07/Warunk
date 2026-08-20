@@ -73,7 +73,7 @@ async function handleLaukSaved() {
       </div>
 
       <RouterLink
-        v-if="terkunci"
+        v-if="!terkunci"
         to="/lauk"
         class="rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white active:bg-zinc-900"
       >

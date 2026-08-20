@@ -25,7 +25,6 @@ const { tanggal } = storeToRefs(useHariStore());
 const { rows, hariError, laukLoading, hari, toItemKalkulasi, resetInitialized } =
   useDetailRows(tanggal);
 const { data: pengaturan, isLoading: pengaturanLoading } = usePengaturan();
-
 const makanSendiri = ref(true);
 const uangLaci = ref<number | null>(null);
 const uangDigital = ref<number | null>(null);
@@ -438,8 +437,9 @@ async function simpan() {
     <!-- AlertDialog konfirmasi edit -->
     <AlertDialog
       :open="showDialog"
-      pesan="Yakin ingin mengedit input malam hari ini? Data yang sudah tersimpan akan diubah."
+      pesan="Yakin ingin mengoreksi input malam hari ini? Data yang tersimpan akan diubah"
       @confirm="
+        hari.updateMalam.mutate();
         editMode = true;
         showDialog = false;
       "

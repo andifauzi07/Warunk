@@ -194,6 +194,8 @@ describe('InputMalamView', () => {
     const ubahBtn = wrapper.findAll('button').find((b) => b.text().includes('Ubah Input Malam'));
     await ubahBtn!.trigger('click');
     await flushPromises();
-    expect(document.body.textContent).toContain('Yakin ingin mengedit input malam hari ini');
+    expect(document.body.textContent).toContain(
+      'Yakin ingin mengoreksi input malam hari ini? Data yang tersimpan akan diubah',
+    );
   });
 });

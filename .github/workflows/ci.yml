@@ -1,15 +1,15 @@
 name: CI
-
 on:
   push:
     branches:
       - '**'
       - '!main'
       - '!dependabot/**'
-  pull_request:
-    branches: 
-      - main
-      
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     name: Lint
@@ -24,6 +24,7 @@ jobs:
         run: bun run lint
       - name: Prettier check
         run: bun run format:check
+
   unit-component:
     name: Unit & Component
     needs: lint
@@ -38,6 +39,7 @@ jobs:
         run: bun run type-check
       - name: Unit & component tests
         run: bun run test
+
   automerge:
     name: Auto Create & Merge PR
     needs: unit-component
@@ -50,15 +52,48 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v6
 
-      # Menggunakan GitHub CLI untuk membuat PR dari branch lokal Anda & mengaktifkan merge commit
-      - name: Create PR and Enable Auto-Merge (Keep All Commits)
+      - name: Check for diff against main
+        id: diffcheck
+        run: |
+          git fetch origin main --depth=1
+          if git diff --quiet origin/main...HEAD; then
+            echo "has_diff=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_diff=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR (if not exists)
+        if: steps.diffcheck.outputs.has_diff == 'true'
         run: |
           gh pr create \
             --base main \
-            --head ${{ github.ref_name }} \
+            --head "${{ github.ref_name }}" \
             --title "Auto PR: ${{ github.ref_name }}" \
-            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." || true
-            
-          gh pr merge ${{ github.ref_name }} --auto --merge
+            --body "PR ini dibuat otomatis oleh GitHub Actions setelah semua tes berhasil." \
+            || echo "PR sudah ada sebelumnya, lanjut ke langkah enable auto-merge."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve PR number
+        if: steps.diffcheck.outputs.has_diff == 'true'
+        id: findpr
+        run: |
+          number=$(gh pr list \
+            --head "${{ github.ref_name }}" \
+            --base main \
+            --state open \
+            --json number \
+            --jq '.[0].number')
+          if [ -z "$number" ]; then
+            echo "Tidak menemukan PR terbuka untuk branch ini." >&2
+            exit 1
+          fi
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Enable Auto-Merge
+        if: steps.diffcheck.outputs.has_diff == 'true'
+        run: |
+          gh pr merge "${{ steps.findpr.outputs.number }}" --auto --merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

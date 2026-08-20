@@ -205,7 +205,7 @@ async function handleLaukSaved() {
       </div>
 
       <button
-        v-if="!terkunci"
+        v-if="!terkunci && hari.rekonsiliasi.value"
         class="rounded-lg border border-dashed border-zinc-300 px-4 py-3 text-sm text-zinc-500 active:bg-zinc-50"
         @click="showLaukForm = true"
       >

@@ -73,7 +73,6 @@ const selisih = computed(() =>
 const simpanError = ref('');
 const simpanLoading = ref(false);
 
-// Initialize makanSendiri from saved data when rows are loaded
 watch(
   rows,
   (r) => {
@@ -84,7 +83,6 @@ watch(
   { immediate: true },
 );
 
-// Check query param for edit mode from HomeView (fire when data loads)
 watch(
   terkunci,
   (v) => {
@@ -104,28 +102,52 @@ async function simpan() {
   }
   simpanLoading.value = true;
   try {
-    const items = rows.value.map((r) => {
-      const item = itemKalkulasi(r);
-      return {
-        id: r.id,
-        lauk_id: r.laukId,
-        porsi_carry_over: r.porsiCarryOver,
-        hpp_carry_over_porsi: r.hppCarryOver,
-        porsi_basi_pagi: r.basiPagi,
-        porsi_baru_dimasak: r.porsiBaru,
-        modal_baru_total: r.modalBaru,
-        hpp_baru_porsi: hppBaruPorsi(item),
-        porsi_sisa_layak_jual: r.sisaLayak,
-        porsi_rusak_malam: r.rusakMalam,
-        porsi_konsumsi: makanSendiri.value ? r.konsumsi : 0,
-      };
+    const existingDetail = hari.detail.value ?? [];
+
+    const items = existingDetail.map((d) => {
+      const activeRow = rows.value.find((r) => r.laukId === d.lauk_id);
+
+      if (activeRow) {
+        const item = itemKalkulasi(activeRow);
+        return {
+          id: activeRow.id,
+          lauk_id: activeRow.laukId,
+          porsi_carry_over: activeRow.porsiCarryOver,
+          hpp_carry_over_porsi: activeRow.hppCarryOver,
+          porsi_basi_pagi: activeRow.basiPagi,
+          porsi_baru_dimasak: activeRow.porsiBaru,
+          modal_baru_total: activeRow.modalBaru,
+          hpp_baru_porsi: hppBaruPorsi(item),
+          porsi_sisa_layak_jual: activeRow.sisaLayak,
+          porsi_rusak_malam: activeRow.rusakMalam,
+          porsi_konsumsi: makanSendiri.value ? activeRow.konsumsi : 0,
+        };
+      } else {
+        return {
+          id: d.id,
+          lauk_id: d.lauk_id,
+          porsi_carry_over: d.porsi_carry_over,
+          hpp_carry_over_porsi: d.hpp_carry_over_porsi,
+          porsi_basi_pagi: d.porsi_basi_pagi,
+          porsi_baru_dimasak: 0,
+          modal_baru_total: 0,
+          hpp_baru_porsi: 0,
+          porsi_sisa_layak_jual: 0,
+          porsi_rusak_malam: 0,
+          porsi_konsumsi: 0,
+        };
+      }
     });
+
     await hari.simpanMalam.mutateAsync({
       items,
       uangLaci: uangLaci.value ?? 0,
       uangDigital: terimaDigital.value ? (uangDigital.value ?? 0) : 0,
       modalKembalianPakai: modalKembalian.value,
     });
+
+    await hari.refetch();
+
     editMode.value = false;
     resetInitialized();
   } catch (e) {

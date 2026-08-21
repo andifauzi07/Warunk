@@ -7,10 +7,14 @@ import { formatRupiah, parseCurrency, pesanError } from '@/lib/format';
 import { getCarryOverForLauk, zeroCarryOverForLauk } from '@/lib/services/rekonsiliasi';
 import AlertDialog from '@/components/AlertDialog.vue';
 import type { MasterLauk } from '@/types/database';
+import { useStatusHari } from '@/composables/useStatusHari';
 
 const { data: laukList, isLoading, error, tambah, ubah } = useMasterLauk();
 const { tanggal } = storeToRefs(useHariStore());
-
+const { rekonsiliasi, isFetching: hariFetching, error: hariError } = useStatusHari(tanggal);
+const hariTerkunci = computed(() => rekonsiliasi.value?.status === 'malam_selesai');
+const hariSiap = computed(() => !!rekonsiliasi.value && !hariFetching.value);
+const halamanMemuat = computed(() => isLoading.value || hariFetching.value);
 const showForm = ref(false);
 const editing = ref<MasterLauk | null>(null);
 const nama = ref('');
@@ -19,7 +23,18 @@ const hppEstimasi = ref('');
 const simpanError = ref('');
 const simpanLoading = ref(false);
 
+function alasanBlokir(): string | null {
+  if (!hariSiap.value) return hariError.value || 'Memuat status hari…';
+  if (hariTerkunci.value) return 'Hari ini sudah terkunci, tidak bisa memodifikasi lauk';
+  return null;
+}
+
 function mulaiTambah() {
+  const alasan = alasanBlokir();
+  if (alasan) {
+    toggleError.value = alasan;
+    return;
+  }
   editing.value = null;
   nama.value = '';
   hargaJual.value = '';
@@ -43,6 +58,11 @@ function batal() {
 }
 
 async function simpan() {
+  const alasan = alasanBlokir();
+  if (alasan) {
+    simpanError.value = alasan;
+    return;
+  }
   simpanError.value = '';
   if (!nama.value.trim()) {
     simpanError.value = 'Nama lauk wajib diisi';
@@ -83,27 +103,23 @@ let pendingToggle: { lauk: MasterLauk; carryOver: number } | null = null;
 async function toggleAktif(lauk: MasterLauk) {
   toggleError.value = '';
 
-  if (lauk.is_active) {
-    const hari = await import('@/lib/services/rekonsiliasi').then((m) =>
-      m.getRekonsiliasiByTanggal(tanggal.value),
-    );
-    if (hari?.status === 'malam_selesai') {
-      toggleError.value = 'Hari ini sudah terkunci. Tidak bisa menonaktifkan lauk.';
-      return;
-    }
-
-    const carryOver = await getCarryOverForLauk(lauk.id, tanggal.value);
-    const pesan =
-      carryOver > 0
-        ? 'Menonaktifkan lauk ini, akan membuat sisa porsi kemarin dianggap basi/rusak !'
-        : 'Yakin menonaktifkan lauk ini ?';
-
-    pendingToggle = { lauk, carryOver };
-    alertDialog.value = { open: true, pesan };
+  const alasan = alasanBlokir();
+  if (alasan) {
+    toggleError.value = alasan;
     return;
   }
+  if (!lauk.is_active) {
+    await ubah.mutateAsync({ id: lauk.id, input: { is_active: true } });
+    return;
+  }
+  const carryOver = await getCarryOverForLauk(lauk.id, tanggal.value);
+  const pesan =
+    carryOver > 0
+      ? 'Menonaktifkan lauk ini, akan membuat sisa porsi kemarin dianggap basi/rusak !'
+      : 'Yakin menonaktifkan lauk ini ?';
 
-  await ubah.mutateAsync({ id: lauk.id, input: { is_active: true } });
+  pendingToggle = { lauk, carryOver };
+  alertDialog.value = { open: true, pesan };
 }
 
 async function konfirmasiToggle() {
@@ -127,6 +143,13 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
 </script>
 
 <template>
+  <div
+    v-if="halamanMemuat"
+    class="mt-6 flex h-screen items-center justify-center text-center text-zinc-500"
+  >
+    Memuat…
+  </div>
+
   <div class="p-4 pb-20">
     <div class="flex items-center justify-between">
       <div>
@@ -134,6 +157,7 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
         <p class="text-sm text-zinc-500">{{ jumlahAktif }} lauk aktif</p>
       </div>
       <button
+        v-if="!hariTerkunci"
         class="rounded-lg bg-green-600 px-3 py-2 text-sm font-semibold text-white active:bg-green-700"
         @click="mulaiTambah"
       >
@@ -142,11 +166,10 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
     </div>
 
     <p v-if="error" class="mt-4 text-sm text-red-600">{{ pesanError(error) }}</p>
+    <p v-if="hariError" class="mt-4 text-sm text-red-600">{{ hariError }}</p>
     <p v-if="toggleError" class="mt-4 text-sm text-red-600">{{ toggleError }}</p>
 
-    <div v-if="isLoading" class="mt-6 text-center text-zinc-500">Memuat…</div>
-
-    <ul v-else-if="laukList" class="mt-4 flex flex-col gap-2">
+    <ul v-if="laukList" class="mt-4 flex flex-col gap-2">
       <li
         v-for="lauk in laukList"
         :key="lauk.id"
@@ -162,14 +185,16 @@ const jumlahAktif = computed(() => laukList.value?.filter((l) => l.is_active).le
         </div>
         <div class="flex shrink-0 items-center gap-2">
           <button
-            class="rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+            :disabled="!hariSiap"
+            class="rounded-lg border border-zinc-300 px-3 py-2 text-sm disabled:opacity-50"
             :title="lauk.is_active ? 'Nonaktifkan' : 'Aktifkan'"
             @click="toggleAktif(lauk)"
           >
             {{ lauk.is_active ? 'Aktif' : 'Nonaktif' }}
           </button>
           <button
-            class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-white active:bg-zinc-900"
+            v-if="!hariTerkunci"
+            class="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-white active:bg-zinc-900 disabled:opacity-50"
             @click="mulaiEdit(lauk)"
           >
             Edit

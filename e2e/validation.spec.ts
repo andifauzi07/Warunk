@@ -13,7 +13,9 @@ test('opname melebihi stok memblokir simpan; uang laci kosong ditolak', async ({
   for (let i = 0; i < 10; i++) {
     await ayamRow.getByRole('button', { name: 'Tambah' }).click();
   }
-  await ayamRow.getByLabel('Total modal bahan (Rp)').fill('70000');
+  await ayamRow.getByLabel('Total modal keseluruhan (Rp)').fill('70000');
+  const telurRow = page.locator('div.rounded-xl.border').filter({ hasText: 'Telur' }).first();
+  await telurRow.getByLabel('Total modal keseluruhan (Rp)').fill('30000');
   await page.getByRole('button', { name: 'Selesai Input Pagi' }).click();
   await expect(page.getByText('✓ Input pagi tersimpan')).toBeVisible();
 
@@ -46,8 +48,8 @@ test('opname melebihi stok memblokir simpan; uang laci kosong ditolak', async ({
   await expect(page.getByText('Melebihi stok!')).toHaveCount(0);
 
   // Uang laci kosong → tolak simpan
-  await page.getByRole('button', { name: 'Simpan & Kunci Hari Ini' }).click();
-  await expect(page.getByText('Uang di laci wajib diisi.')).toBeVisible();
+  const tombolSimpan = page.getByRole('button', { name: 'Simpan & Kunci Hari Ini' });
+  await expect(tombolSimpan).toBeDisabled();
 
   // Isi uang laci → terkunci
   await page.getByLabel('Total uang di laci').fill('80000');

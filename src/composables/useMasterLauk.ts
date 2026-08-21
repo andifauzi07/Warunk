@@ -6,8 +6,9 @@ import type { MasterLauk } from '@/types/database';
 
 const KEY = ['master-lauk'];
 
-function invalidateTerkait(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: KEY });
+async function invalidateTerkait(qc: ReturnType<typeof useQueryClient>) {
+  await qc.invalidateQueries({ queryKey: KEY });
+  await nextTick();
   qc.invalidateQueries({ queryKey: ['hari-ini'] });
 }
 
@@ -31,19 +32,13 @@ export function useMasterLauk() {
     onSuccess: () => invalidateTerkait(qc),
   });
 
-  async function refreshHariAfterTambah() {
-    await qc.refetchQueries({ queryKey: KEY });
-    await nextTick();
-    qc.invalidateQueries({ queryKey: ['hari-ini'] });
-  }
-
   return {
     data: q.data,
     isLoading: q.isLoading,
     error: q.error,
+    success: q.isSuccess,
     tambah,
     ubah,
-    refreshHariAfterTambah,
   };
 }
 

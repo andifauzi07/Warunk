@@ -94,6 +94,11 @@ jobs:
       - name: Enable Auto-Merge
         if: steps.diffcheck.outputs.has_diff == 'true'
         run: |
-          gh pr merge "${{ steps.findpr.outputs.number }}" --auto --merge
+           # Memberi jeda waktu agar GitHub selesai menginisialisasi status check pada PR yang baru dibuat
+            echo "Menunggu GitHub API menyinkronkan status PR..."
+            sleep 10
+
+            # Menjalankan perintah auto-merge
+            gh pr merge "${{ steps.findpr.outputs.number }}" --auto --merge
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

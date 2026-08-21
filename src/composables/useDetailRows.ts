@@ -53,7 +53,7 @@ export function toItemKalkulasi(r: RowDetail): ItemKalkulasi {
 }
 
 export function useDetailRows(tanggal: Ref<string>) {
-  const { data: laukList, isLoading: laukLoading, refreshHariAfterTambah } = useMasterLauk();
+  const { data: laukList, isLoading: laukLoading } = useMasterLauk();
   const laukAktif = computed(() => (laukList.value ?? []).filter((l) => l.is_active));
   const hari = useHariIni(tanggal, laukAktif);
   const { error: hariError } = hari;
@@ -94,6 +94,5 @@ export function useDetailRows(tanggal: Ref<string>) {
     hari,
     toItemKalkulasi,
     resetInitialized,
-    refreshHariAfterTambah,
   };
 }

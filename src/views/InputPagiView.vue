@@ -10,7 +10,7 @@ import { formatAngka, formatRupiah, parseCurrency, pesanError } from '@/lib/form
 import type { RowDetail } from '@/composables/useDetailRows';
 
 const { tanggal } = storeToRefs(useHariStore());
-const { rows, hariError, hari, toItemKalkulasi, resetInitialized, refreshHariAfterTambah } =
+const { rows, hariError, hari, laukAktif, laukLoading, toItemKalkulasi, resetInitialized } =
   useDetailRows(tanggal);
 
 function tandaiLayak(r: RowDetail) {
@@ -58,10 +58,6 @@ async function simpan() {
 const semuaModalTerisi = computed(() => rows.value.every((r) => r.modalBaru > 0));
 
 const showLaukForm = ref(false);
-
-async function handleLaukSaved() {
-  await refreshHariAfterTambah();
-}
 </script>
 
 <template>
@@ -73,7 +69,6 @@ async function handleLaukSaved() {
       </div>
 
       <RouterLink
-        v-if="!terkunci"
         to="/lauk"
         class="rounded-lg bg-zinc-800 px-3 py-2 text-sm font-semibold text-white active:bg-zinc-900"
       >
@@ -205,7 +200,7 @@ async function handleLaukSaved() {
       </div>
 
       <button
-        v-if="!terkunci && hari.rekonsiliasi.value"
+        v-if="(!terkunci && hari.rekonsiliasi.value) || (laukAktif.length === 0 && !laukLoading)"
         class="rounded-lg border border-dashed border-zinc-300 px-4 py-3 text-sm text-zinc-500 active:bg-zinc-50"
         @click="showLaukForm = true"
       >
@@ -222,6 +217,6 @@ async function handleLaukSaved() {
       </button>
     </div>
 
-    <LaukFormSheet v-model:open="showLaukForm" @saved="handleLaukSaved" />
+    <LaukFormSheet v-model:open="showLaukForm" />
   </div>
 </template>

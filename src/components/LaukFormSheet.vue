@@ -4,7 +4,7 @@ import { useMasterLauk } from '@/composables/useMasterLauk';
 import { parseCurrency, pesanError } from '@/lib/format';
 
 const open = defineModel<boolean>('open', { default: false });
-const emit = defineEmits<{ saved: [] }>();
+// const emit = defineEmits<{ saved: [] }>();
 
 const { data: laukList, tambah } = useMasterLauk();
 
@@ -52,7 +52,7 @@ async function simpan() {
       harga_jual_porsi: parseCurrency(hargaJual.value),
       hpp_estimasi_porsi: parseCurrency(hppEstimasi.value),
     });
-    emit('saved');
+
     batal();
   } catch (e) {
     simpanError.value = pesanError(e);

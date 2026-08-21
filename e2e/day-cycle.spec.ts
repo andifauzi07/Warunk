@@ -16,7 +16,9 @@ test('siklus harian: pagi → malam → terkunci → dashboard', async ({ page }
   for (let i = 0; i < 10; i++) {
     await ayamRow.getByRole('button', { name: 'Tambah' }).click();
   }
-  await ayamRow.getByLabel('Total modal bahan (Rp)').fill('70000');
+  await ayamRow.getByLabel('Total modal keseluruhan (Rp)').fill('70000');
+  const telurRow = page.locator('div.rounded-xl.border').filter({ hasText: 'Telur' }).first();
+  await telurRow.getByLabel('Total modal keseluruhan (Rp)').fill('30000');
   await page.getByRole('button', { name: 'Selesai Input Pagi' }).click();
   await expect(page.getByText('✓ Input pagi tersimpan')).toBeVisible();
 

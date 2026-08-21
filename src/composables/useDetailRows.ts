@@ -62,24 +62,34 @@ export function useDetailRows(tanggal: Ref<string>) {
   let initialized = false;
 
   watch(
-    hari.detail,
-    (d) => {
-      if (d.length > 0 && !initialized) {
-        const activeIds = new Set(laukAktif.value.map((l) => l.id));
-        rows.value = initRowsFromDetail(d).filter((r) => activeIds.has(r.laukId));
+    [hari.detail, laukAktif],
+    ([newDetail, currentLaukAktif]) => {
+      if (!newDetail || newDetail.length === 0) return;
+
+      const activeIds = new Set(currentLaukAktif.map((l) => l.id));
+
+      if (!initialized) {
+        rows.value = initRowsFromDetail(newDetail).filter((r) => activeIds.has(r.laukId));
         initialized = true;
-      } else if (initialized && d.length > 0) {
-        const existingLaukIds = new Set(rows.value.map((r) => r.laukId));
-        const activeIds = new Set(laukAktif.value.map((l) => l.id));
-        const newItems = initRowsFromDetail(d).filter(
-          (r) => !existingLaukIds.has(r.laukId) && activeIds.has(r.laukId),
-        );
-        if (newItems.length > 0) {
-          rows.value = [...rows.value, ...newItems];
-        }
+      } else {
+        const existingRowsMap = new Map(rows.value.map((r) => [r.laukId, r]));
+        const updatedRows: RowDetail[] = [];
+
+        initRowsFromDetail(newDetail).forEach((freshRow) => {
+          if (activeIds.has(freshRow.laukId)) {
+            const oldRow = existingRowsMap.get(freshRow.laukId);
+            if (oldRow) {
+              updatedRows.push(oldRow);
+            } else {
+              updatedRows.push(freshRow);
+            }
+          }
+        });
+
+        rows.value = updatedRows;
       }
     },
-    { immediate: true },
+    { immediate: true, deep: true },
   );
 
   function resetInitialized() {

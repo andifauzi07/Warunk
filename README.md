@@ -32,6 +32,7 @@ Tidak seperti POS konvensional yang mencatat _setiap transaksi_ di kasir (terbuk
 - [Testing](#testing)
 - [Setup & Pengembangan](#setup--pengembangan)
 - [Spec-Driven Development](#spec-driven-development)
+- [Dokumentasi Developer (`docs/`)](docs/README.md)
 
 ---
 

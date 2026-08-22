@@ -7,13 +7,14 @@ import { useAnalitik } from '@/composables/useAnalitik';
 import { statusSelisih } from '@/lib/engine';
 import { formatAngka, formatRupiah, pesanError, tambahHari } from '@/lib/format';
 import RingkasanHarianCard from '@/components/RingkasanHarianCard.vue';
+import RiwayatPendapatanCard from '@/components/RiwayatPendapatanCard.vue';
 import type { StatusHarian } from '@/types/database';
 
 const { tanggal } = storeToRefs(useHariStore());
 const { data: pengaturan } = usePengaturan();
 
 const rentang = ref(30);
-const { ringkasanHariIni, tren, ranking, dari } = useAnalitik(tanggal.value, rentang);
+const { ringkasanHariIni, tren, ranking, riwayat, dari } = useAnalitik(tanggal.value, rentang);
 
 const ringkasanData = ringkasanHariIni.data;
 const ringkasanError = ringkasanHariIni.error;
@@ -24,6 +25,9 @@ const trenData = tren.data;
 const rankingError = ranking.error;
 const rankingLoading = ranking.isLoading;
 const rankingData = ranking.data;
+const riwayatError = riwayat.error;
+const riwayatLoading = riwayat.isLoading;
+const riwayatData = riwayat.data;
 
 const ringkasan = computed(() => ringkasanData.value);
 
@@ -309,6 +313,16 @@ const seringRusak = computed(() =>
           ><span class="h-2.5 w-2.5 rounded-sm bg-red-300"></span> Lupa input</span
         >
       </div>
+    </div>
+
+    <!-- Riwayat Pendapatan -->
+    <div class="mt-4">
+      <RiwayatPendapatanCard
+        :rows="riwayatData ?? []"
+        :loading="riwayatLoading"
+        :error="riwayatError"
+        :rentang="rentang"
+      />
     </div>
 
     <!-- Ranking -->

@@ -63,7 +63,7 @@ Tambah/edit/hapus jenis lauk (nama, harga jual per porsi, HPP estimasi). Lauk mu
 
 ### 🌅 Input Pagi — Baseline Stok Hari Ini
 
-Menampilkan **carry-over** (sisa lauk kemarin yang layak jual) secara otomatis sebagai baris awal. Pemilik mengonfirmasi per lauk **"Masih Layak Jual"** atau **"Basi — Catat Rugi"**, lalu menambah **porsi masak baru** + **total modal bahan** menggunakan stepper besar (bukan keyboard). Tombol tunggal "Selesai Input Pagi" mengubah status hari menjadi `pagi_selesai`.
+Menampilkan **carry-over** (sisa lauk kemarin yang layak jual) secara otomatis sebagai baris awal. Pemilik mengonfirmasi per lauk **"Masih Layak Jual"** atau **"Basi — Catat Rugi"**, lalu menambah **porsi masak baru** + **total modal bahan** menggunakan stepper besar (bukan keyboard). Lauk baru dapat dibuat **langsung inline** dari halaman ini (tombol `[+ Lauk]` / `[+ Tambah Lauk Baru]`). Tombol tunggal "Selesai Input Pagi" mengubah status hari menjadi `pagi_selesai`.
 
 ### 🌙 Input Malam — Opname & Kunci Hari
 
@@ -79,6 +79,7 @@ Setiap hari default-nya hari buka. Pemilik dapat mendeklarasikan hari libur (sta
 - **Detektor Selisih Kas**: indikator warna (🟢 aman / 🟡 waspada / 🔴 kritis) berdasarkan ambang toleransi yang bisa dikonfigurasi.
 - **Tren profit** 7 & 30 hari (grafik bar) dengan penanda khusus untuk hari libur dan gap "lupa input".
 - **Ranking lauk** terlaris & paling sering basi untuk menyesuaikan jumlah masak besok.
+- **Riwayat Pendapatan Harian**: list riwayat pemasukan harian (hanya hari terkunci), berisi total pendapatan, tanggal & hari, total porsi dikonsumsi, dan keuntungan bersih — tinggi terbatas + scroll internal.
 
 ### ⚙️ Pengaturan Warung
 
@@ -182,6 +183,7 @@ Implementasi murni ada di [`src/lib/engine.ts`](src/lib/engine.ts) — pure func
 │  lib/supabase.ts · lib/engine.ts · lib/format.ts                 │
 │  services/rekonsiliasi · masterLauk · pengaturan · analitik      │
 │  lib/sessionNavigation.ts (arahkanKe — predikat navigasi tunggal)│
+│  directives/currency.ts (v-currency — format Rupiah otomatis)    │
 └───────────────┬──────────────────────────────────────────────────┘
                 │
 ┌───────────────▼──────────────────────────────────────────────────┐
@@ -211,6 +213,7 @@ Warunk/
 │   ├── components/       # Stepper.vue — stepper −/+/angka reusable
 │   ├── composables/      # useHariIni, useStatusHari, useMasterLauk,
 │   │                     #   usePengaturan, useAnalitik, useAuthGuard
+│   ├── directives/       # currency.ts (v-currency — format Rupiah live)
 │   ├── stores/           # session.ts (auth), hari.ts (tanggal aktif)
 │   ├── lib/
 │   │   ├── engine.ts     # ★ pure engine rekonsiliasi mundur
@@ -226,7 +229,7 @@ Warunk/
 ├── supabase/
 │   └── migrations/       # 6 migrasi SQL (tabel → trigger/view → RLS)
 ├── openspec/
-│   ├── specs/            # 10 spesifikasi fitur (sumber kebenaran)
+│   ├── specs/            # spesifikasi fitur + infrastruktur (sumber kebenaran)
 │   └── changes/archive/  # riwayat change proposal + design
 ├── PRD.md                # Product Requirement Document
 ├── .env.example          # template variabel lingkungan
@@ -358,7 +361,7 @@ supabase db push      # atau push migrasi ke project remote yang sudah di-link
 
 Fitur-fitur aplikasi ini dikembangkan **spec-driven** menggunakan **OpenSpec**:
 
-- **`openspec/specs/`** — 10 spesifikasi live (user-auth, input-pagi, input-malam, pengaturan-warung, master-lauk, session-navigation, data-fetching, hari-libur, dashboard-analitik, rekonsiliasi-mundur). Setiap spesifikasi ditulis dalam format _Purpose → Requirements → Scenarios (WHEN/THEN)_.
+- **`openspec/specs/`** — spesifikasi live (fitur: user-auth, session-navigation, rekonsiliasi-mundur, pengaturan-warung, master-lauk, input-pagi, input-malam, edit-malam-flow, hari-libur, dashboard-analitik, data-fetching, currency-input-formatting, inline-lauk-creation, e2e-lauk-deactivation; plus infrastruktur: refactoring-contract, eslint-config, prettier-config, ci-lint, automated-testing). Setiap spesifikasi ditulis dalam format _Purpose → Requirements → Scenarios (WHEN/THEN)_.
 - **`openspec/changes/archive/`** — riwayat change proposal + design + tasks yang sudah diimplementasikan, termasuk catatan keputusan desain penting:
   - Porsi **dimakan sendiri** dicatat eksplisit — mencegah pendapatan over-count.
   - **Float di-snapshot per hari** — selisih kas bebas bias perubahan setting.

@@ -6,6 +6,8 @@ import {
   pesanError,
   tambahHari,
   tanggalBaca,
+  tanggalPendek,
+  tanggalPendekAngka,
 } from '../lib/format';
 
 describe('formatRupiah', () => {
@@ -101,5 +103,38 @@ describe('parseCurrency', () => {
 
   it('parse 0', () => {
     expect(parseCurrency('0')).toBe(0);
+  });
+});
+
+describe('tanggalPendek', () => {
+  it('memformat hari & tanggal pendek id-ID', () => {
+    expect(tanggalPendek('2026-08-22')).toEqual({ hari: 'Sabtu', tgl: '22 Agu' });
+  });
+
+  it('memformat tanpa leading zero pada tanggal', () => {
+    expect(tanggalPendek('2026-08-01').tgl).toBe('1 Agu');
+  });
+
+  it('boundary akhir tahun', () => {
+    expect(tanggalPendek('2026-12-31')).toEqual({ hari: 'Kamis', tgl: '31 Des' });
+  });
+
+  it('boundary awal tahun', () => {
+    expect(tanggalPendek('2027-01-01')).toEqual({ hari: 'Jumat', tgl: '1 Jan' });
+  });
+});
+
+describe('tanggalPendekAngka', () => {
+  it('memformat dd/mm tanpa leading zero pada tahun', () => {
+    expect(tanggalPendekAngka('2026-08-22')).toBe('22/08');
+  });
+
+  it('menambahkan leading zero pada bulan & tanggal', () => {
+    expect(tanggalPendekAngka('2027-01-05')).toBe('05/01');
+  });
+
+  it('boundary akhir & awal tahun', () => {
+    expect(tanggalPendekAngka('2026-12-31')).toBe('31/12');
+    expect(tanggalPendekAngka('2027-01-01')).toBe('01/01');
   });
 });

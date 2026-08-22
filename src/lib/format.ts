@@ -18,6 +18,20 @@ export function tanggalBaca(tanggal: string): string {
   });
 }
 
+export function tanggalPendek(tanggal: string): { hari: string; tgl: string } {
+  const d = new Date(tanggal + 'T00:00:00');
+  const hari = d.toLocaleDateString('id-ID', { weekday: 'long' });
+  const tgl = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  return { hari, tgl };
+}
+
+export function tanggalPendekAngka(tanggal: string): string {
+  const d = new Date(tanggal + 'T00:00:00');
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const t = String(d.getDate()).padStart(2, '0');
+  return `${t}/${m}`;
+}
+
 export function pesanError(e: unknown): string {
   if (e instanceof Error) return e.message;
   if (e && typeof e === 'object') {

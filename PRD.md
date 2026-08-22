@@ -4,11 +4,11 @@
 
 | Metadata      | Keterangan                                          |
 | ------------- | --------------------------------------------------- |
-| Nama Produk   | _(working title)_ Warunk — Rekonsiliasi Mundur   |
-| Versi Dokumen | 1.0                                                 |
+| Nama Produk   | Warunk — Rekonsiliasi Mundur                        |
+| Versi Dokumen | 1.1 (diselaraskan dengan implementasi)              |
 | Tipe Proyek   | Personal Project / Impact-Driven untuk UMKM Kuliner |
 | Platform      | Mobile-First Progressive Web App (PWA)              |
-| Status        | Draft — Siap Pakai untuk Development                |
+| Status        | Live — Selaras dengan Fungsionalitas Aplikasi       |
 
 ---
 
@@ -83,13 +83,18 @@ Beban input data digeser sepenuhnya ke waktu senggang pemilik warung — pagi se
 **Tujuan:** Rekonsiliasi mundur untuk menghitung apa yang terjual dan profit bersih.
 
 1. Pemilik membuka menu **"Input Malam"**.
-2. Untuk setiap jenis lauk, pemilik menghitung sisa fisik (stok opname) dan menginput:
-   - Jumlah porsi sisa yang **masih layak jual besok (carry-over)**.
-   - Jumlah porsi yang **rusak/basi hari ini** (loss).
-3. Sistem otomatis menghitung **Porsi Dikonsumsi** = Stok Aktif Awal − Sisa Layak Jual − Porsi Rusak.
-4. Pemilik menginput **Total Uang di Laci Kasir** (satu angka saja, hasil hitung uang fisik).
-5. Sistem menampilkan ringkasan: Total HPP Nyata, Estimasi Pendapatan (berdasarkan harga jual per porsi), Keuntungan Bersih, dan **Selisih Kas** (deteksi potensi kebocoran).
-6. Data tersimpan, dashboard otomatis ter-update.
+2. Pemilik menandai apakah **"hari ini makan sendiri"** (jika ya, kolom **Dimakan Sendiri** muncul per lauk; jika tidak, dihitung 0).
+3. Untuk setiap jenis lauk, pemilik menghitung sisa fisik (stok opname) dan menginput:
+    - Jumlah porsi sisa yang **masih layak jual besok (carry-over)**.
+    - Jumlah porsi yang **rusak/basi hari ini** (loss).
+    - Jumlah porsi yang **dimakan sendiri** (pemilik/keluarga, bukan terjual).
+4. Sistem otomatis menghitung **Porsi Dikonsumsi** = Stok Aktif Awal − Sisa Layak Jual − Porsi Rusak − Dimakan Sendiri.
+5. Pemilik menginput **Total Uang di Laci Kasir** (satu angka, hasil hitung uang fisik) dan — bila warung menerima pembayaran digital — **Uang Digital Masuk Hari Ini** (QRIS/GoPay/dll).
+6. Sistem menampilkan ringkasan: Total HPP Nyata, Estimasi Pendapatan (berdasarkan harga jual per porsi), Keuntungan Bersih, dan **Selisih Kas** (deteksi potensi kebocoran). Selisih kas memperhitungkan modal kembalian (float) yang di-snapshot saat simpan.
+7. Pemilik menekan **"Simpan & Kunci"** — hari berstatus `malam_selesai` dan tidak dapat berubah. Data tersimpan, dashboard otomatis ter-update.
+8. **Koreksi pasca-kunci:** pemilik masih dapat membuka kembali hari terkunci via tombol **"Ubah Input Malam"** (dilindungi dialog konfirmasi) untuk memperbaiki data bila terjadi salah input.
+
+> **Hari Libur:** Setiap hari default-nya hari buka. Pemilik dapat mendeklarasikan **Hari Libur** (state ke-4: `libur`) sehingga sistem tidak menuntut input. Carry-over **melompati** hari libur (sisa Sabtu menunggu hingga Senin) dan hanya dihitung rugi saat diperiksa di hari operasional berikutnya. Dashboard membedakan status **libur** vs **lupa input** (hari operasional tanpa data).
 
 ---
 
@@ -100,14 +105,20 @@ Beban input data digeser sepenuhnya ke waktu senggang pemilik warung — pagi se
 ```
 [Stok Aktif Awal] = [Carry-Over Layak Jual (dari kemarin)] + [Porsi Masak Baru Hari Ini]
 
-[Porsi Dikonsumsi] = [Stok Aktif Awal] − [Sisa Layak Jual Malam Ini] − [Porsi Rusak Malam Ini]
+[Porsi Dikonsumsi] = [Stok Aktif Awal] − [Sisa Layak Jual Malam Ini] − [Porsi Rusak Malam Ini] − [Porsi Dimakan Sendiri]
 
 [Total HPP Nyata] = Σ ( [Porsi Dikonsumsi per Lauk] × [HPP per Porsi (Weighted Average)] )
 
 [Total Pendapatan Estimasi] = Σ ( [Porsi Dikonsumsi per Lauk] × [Harga Jual per Porsi] )
 
-[Keuntungan Bersih Harian] = [Total Pendapatan Estimasi] − [Total HPP Nyata] − [Total Nilai Kerugian (Basi/Rusak)]
+[Total Nilai Kerugian] = Σ ( [Porsi Basi Pagi × HPP Carry-Over] + [Porsi Rusak Malam × HPP Gabungan] )
+
+[Keuntungan Bersih Harian] = [Total Pendapatan Estimasi] − [Total HPP Nyata] − [Total Nilai Kerugian]
+
+[Selisih Kas] = ( [Uang Laci] − [Modal Kembalian (snapshot)] ) + [Uang Digital] − [Total Pendapatan Estimasi]
 ```
+
+> Catatan: **Porsi Dimakan Sendiri** dicatat eksplisit agar tidak terhitung sebagai pendapatan (pemilik/keluarga mengonsumsi, bukan terjual). **Modal Kembalian (float)** di-snapshot ke `modal_kembalian_pakai` saat simpan malam sehingga perubahan pengaturan di kemudian hari tidak menggeser selisih kas hari yang sudah terkunci. **Uang Digital** (QRIS/GoPay) dihitung dalam selisih kas bila warung mengaktifkan pembayaran digital.
 
 ### 3.2 Penanganan Porsi Rusak/Basi
 
@@ -151,8 +162,13 @@ HPP gabungan inilah yang dipakai untuk menghitung Total HPP Nyata dari Porsi Dik
 
 ### 3.5 Aturan Penting Tambahan
 
-- Sistem **tidak boleh** mencampur porsi carry-over dari lebih dari satu hari sebelumnya tanpa jejak — setiap batch carry-over menyimpan referensi ke `rekonsiliasi_harian` asalnya untuk audit trail.
+- Sistem **tidak boleh** mencampur porsi carry-over dari lebih dari satu hari sebelumnya tanpa jejak — setiap batch carry-over menyimpan referensi ke `rekonsiliasi_harian` asalnya (`carry_over_dari_id`) untuk audit trail.
 - Jika HPP porsi baru tidak diketahui (modal belum diinput), sistem menggunakan **HPP Estimasi** dari master lauk sebagai fallback, dan menandai hari itu sebagai "estimasi belum final" pada dashboard.
+- **Porsi Dimakan Sendiri** wajib dicatat eksplisit agar tidak menaikkan pendapatan (bukan transaksi jual).
+- **Modal Kembalian (float)** di-snapshot per hari (`modal_kembalian_pakai`) saat simpan malam — hari terkunci bebas bias perubahan pengaturan.
+- **Pembayaran non-tunai (digital)** dihitung dalam selisih kas bila warung mengaktifkan toggle pembayaran digital di pengaturan.
+- **Hari Libur** adalah state eksplisit (`libur`) ke-4 selain `pagi_pending` → `pagi_selesai` → `malam_selesai`. Carry-over melompati hari libur; hari libur dibedakan dari "lupa input" pada dashboard.
+- **Kunci di malam hari (`malam_selesai`) final**, namun pemilik masih dapat mengoreksi via mode edit yang tersedia (dilindungi dialog konfirmasi).
 
 ---
 
@@ -167,27 +183,44 @@ HPP gabungan inilah yang dipakai untuk menghitung Total HPP Nyata dari Porsi Dik
 
 ### 4.2 Modul Input Pagi (Stok Awal Masakan)
 
-- Menampilkan daftar carry-over otomatis dari sesi malam kemarin (read-only, hasil sistem).
+- Menampilkan daftar carry-over otomatis dari sesi malam hari operasional sebelumnya (read-only, hasil sistem); hanya lauk dengan `is_active = true` yang ditampilkan.
 - Untuk setiap carry-over: tombol besar **"Masih Layak Jual"** / **"Basi — Catat Rugi"** (Porsi Basi Pagi).
 - Input jumlah porsi baru per lauk menggunakan stepper/tombol +/− besar (bukan keyboard angka manual) untuk kecepatan.
-- Input total modal bahan baku harian per lauk (angka bulat, opsional per item, boleh diisi belakangan sebelum malam).
-- Tombol simpan tunggal: **"Selesai Input Pagi"**.
+- Input total modal bahan baku harian per lauk (angka bulat) — **wajib diisi (> 0)** untuk setiap lauk; tombol **"Selesai Input Pagi"** otomatis ter-_disable_ bila ada lauk dengan modal 0/kosong (boleh dilanjutkan lalu dikoreksi kembali sebelum kunci malam).
+- Akses **tambah lauk baru secara inline** langsung dari halaman Input Pagi (tombol header `[+ Lauk]` dan tombol inline `[+ Tambah Lauk Baru]` saat mode input), sehingga pemilik tidak perlu pindah ke halaman Master Lauk.
+- Tombol simpan tunggal: **"Selesai Input Pagi"** → status berubah menjadi `pagi_selesai`, lalu menampilkan ringkasan per lauk + tombol **"Ubah Input Pagi"** untuk koreksi selama hari belum terkunci.
 
-### 4.3 Modul Input Malam (Sisa Lauk, Basi, & Uang Laci)
+### 4.3 Modul Input Malam (Sisa Lauk, Basi, Dimakan Sendiri, & Uang)
 
 - Daftar semua lauk yang aktif hari ini dengan Stok Aktif Awal sudah terisi otomatis dari data pagi.
-- Untuk tiap lauk: dua kolom input stepper — **Sisa Layak Jual** dan **Porsi Rusak**.
-- Validasi otomatis: Sisa Layak Jual + Porsi Rusak tidak boleh melebihi Stok Aktif Awal.
-- Satu input tunggal: **Total Uang di Laci Kasir Malam Ini**.
-- Setelah simpan, sistem langsung menampilkan **Ringkasan Hari Ini** (lihat 4.4) sebagai konfirmasi visual instan.
+- Pemilik menandai **"hari ini makan sendiri"**; bila ya, kolom stepper **Dimakan Sendiri** muncul per lauk, bila tidak dihitung 0.
+- Untuk tiap lauk: tiga kolom input stepper — **Sisa Layak Jual**, **Porsi Rusak**, dan **Dimakan Sendiri**.
+- Validasi otomatis: Sisa Layak Jual + Porsi Rusak + Dimakan Sendiri tidak boleh melebihi Stok Aktif Awal.
+- Input **Total Uang di Laci Kasir** (satu angka; tombol simpan ter-_disable_ bila kosong/negatif) dan — bila pembayaran digital aktif — input **Uang Digital Masuk Hari Ini**.
+- Saat simpan, **Modal Kembalian di-snapshot** dari pengaturan ke `modal_kembalian_pakai` agar hari terkunci bebas bias perubahan setting.
+- Tombol **"Simpan & Kunci"** → status `malam_selesai`, langsung menampilkan **Ringkasan Hari Ini** di layar yang sama (read-only) beserta tombol **"Ubah Input Malam"** (dilindungi dialog konfirmasi) untuk koreksi pasca-kunci.
 
 ### 4.4 Dashboard Analisis Pemilik
 
-- **Ringkasan Hari Ini:** Total Pendapatan Estimasi, Total HPP Nyata, Total Kerugian (basi pagi + malam), Keuntungan Bersih, dan **Selisih Kas** (Uang Laci Fisik − Total Pendapatan Estimasi).
-- **Detektor Selisih/Kebocoran Uang:** indikator warna (hijau = selisih wajar dalam toleransi, kuning = selisih sedang, merah = selisih besar/berpotensi kebocoran), dengan ambang batas toleransi yang dapat dikonfigurasi pemilik.
-- **Tren Profit Harian/Mingguan:** grafik sederhana (bar/line chart) untuk 7 dan 30 hari terakhir.
+- **Ringkasan Hari Ini:** Total Pendapatan Estimasi, Total HPP Nyata, Total Kerugian (basi pagi + malam), Keuntungan Bersih, dan **Selisih Kas** (`(Uang Laci − Modal Kembalian) + Uang Digital − Pendapatan Estimasi`).
+- **Detektor Selisih/Kebocoran Uang:** indikator warna (🟢 hijau = selisih wajar dalam toleransi, 🟡 kuning = selisih sedang, 🔴 merah = selisih besar/berpotensi kebocoran), dengan ambang batas toleransi (persen dari pendapatan) yang dapat dikonfigurasi pemilik.
+- **Tren Profit Harian/Mingguan:** grafik batang sederhana untuk 7 dan 30 hari terakhir, dengan penanda khusus untuk hari libur dan celah "lupa input".
 - **Ranking Lauk Terlaris & Paling Sering Basi:** membantu pemilik menyesuaikan jumlah masak besok.
+- **Riwayat Pendapatan Harian:** kartu list riwayat pemasukan harian (hanya hari `malam_selesai`, hari `libur`/tanpa input di-skip) berisi total pendapatan, tanggal & hari, total porsi dikonsumsi, dan keuntungan bersih — dengan tinggi terbatas + scroll internal.
 - Semua visual didesain untuk dibaca sekilas (glanceable), bukan tabel data mentah.
+
+### 4.5 Pengaturan Warung
+
+- **Modal Kembalian (Float):** nilai default uang kecil di laci kasir; di-snapshot per hari saat simpan malam. Perubahan hanya berlaku untuk hari yang belum terkunci.
+- **Toleransi Selisih Kas:** ambang (persen dari pendapatan estimasi) untuk indikator warna detektor selisih.
+- **Toggle Pembayaran Digital:** mengontrol kemunculan input uang digital pada modul Input Malam.
+- Disimpan sebagai **satu baris per pengguna** (upsert: baris pertama dibuat, simpan berikutnya memperbarui tanpa duplikat).
+
+### 4.6 Hari Libur (Deklarasi Eksplisit)
+
+- Setiap hari default hari buka. Pemilik dapat mendeklarasikan **Hari Libur** (state ke-4) sehingga sistem tidak menuntut input.
+- **Carry-over melompati hari libur** (sisa Sabtu menunggu hingga Senin) dan hanya dihitung rugi saat diperiksa di hari operasional berikutnya.
+- Dashboard membedakan status **libur** vs **lupa input** (hari operasional tanpa data).
 
 ---
 
@@ -223,10 +256,14 @@ CREATE TABLE master_lauk (
 -- =========================================================
 CREATE TABLE rekonsiliasi_harian (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tanggal                 DATE NOT NULL UNIQUE,
+    user_id                 UUID NOT NULL REFERENCES auth.users(id),
+    tanggal                 DATE NOT NULL,
     status                  TEXT NOT NULL DEFAULT 'pagi_pending'
-                             CHECK (status IN ('pagi_pending','pagi_selesai','malam_selesai')),
+                             CHECK (status IN
+                                ('pagi_pending','pagi_selesai','malam_selesai','libur')),
     total_uang_laci         NUMERIC(12,2),
+    total_uang_digital      NUMERIC(12,2) NOT NULL DEFAULT 0,
+    modal_kembalian_pakai   NUMERIC(12,2) NOT NULL DEFAULT 0,  -- snapshot float saat simpan malam
 
     -- Kolom agregat, diisi via trigger/fungsi setelah detail_stok_harian lengkap
     total_pendapatan_estimasi NUMERIC(12,2) DEFAULT 0,
@@ -239,15 +276,32 @@ CREATE TABLE rekonsiliasi_harian (
     ) STORED,
 
     -- Generated column: selisih kas untuk detektor kebocoran
+    -- (uang laci − modal kembalian) + uang digital − pendapatan estimasi
     selisih_kas GENERATED ALWAYS AS (
-        total_uang_laci - total_pendapatan_estimasi
+        (COALESCE(total_uang_laci,0) - modal_kembalian_pakai)
+        + total_uang_digital - total_pendapatan_estimasi
     ) STORED,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    -- 1 baris per hari per pemilik
+    UNIQUE (user_id, tanggal)
 );
 
 -- =========================================================
--- 3. DETAIL STOK HARIAN (1 baris = 1 lauk pada 1 hari tertentu)
+-- 3. PENGATURAN WARUNG (1 baris per pemilik)
+-- =========================================================
+CREATE TABLE pengaturan_warung (
+    id                           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id                      UUID NOT NULL REFERENCES auth.users(id) UNIQUE,
+    modal_kembalian_default      NUMERIC(12,2) NOT NULL DEFAULT 0,  -- float default
+    toleransi_selisih_persen     NUMERIC(5,2) NOT NULL DEFAULT 5,    -- % dari pendapatan
+    terima_pembayaran_digital    BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at                   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- =========================================================
+-- 4. DETAIL STOK HARIAN (1 baris = 1 lauk pada 1 hari tertentu)
 -- =========================================================
 CREATE TABLE detail_stok_harian (
     id                      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -267,6 +321,7 @@ CREATE TABLE detail_stok_harian (
     -- ===== INPUT MALAM =====
     porsi_sisa_layak_jual   INTEGER NOT NULL DEFAULT 0,      -- carry-over untuk besok
     porsi_rusak_malam       INTEGER NOT NULL DEFAULT 0,
+    porsi_dimakan_sendiri   INTEGER NOT NULL DEFAULT 0,      -- konsumsi pemilik/keluarga
 
     -- ===== GENERATED COLUMNS (kalkulasi otomatis) =====
 
@@ -275,8 +330,7 @@ CREATE TABLE detail_stok_harian (
         (porsi_carry_over - porsi_basi_pagi) + porsi_baru_dimasak
     ) STORED,
 
-    -- HPP porsi baru dihitung manual di sisi aplikasi (modal_baru_total / porsi_baru_dimasak)
-    -- disimpan sebagai kolom biasa agar bisa diisi via trigger setelah insert
+    -- HPP porsi baru dihitung di sisi aplikasi (modal_baru_total / porsi_baru_dimasak)
     hpp_baru_porsi NUMERIC(12,2) NOT NULL DEFAULT 0,
 
     -- HPP Gabungan (Weighted Average) — generated column
@@ -290,16 +344,16 @@ CREATE TABLE detail_stok_harian (
         END
     ) STORED,
 
-    -- Porsi Dikonsumsi = Stok Aktif Awal - Sisa Layak Jual - Rusak Malam
+    -- Porsi Dikonsumsi = Stok Aktif Awal - Sisa Layak Jual - Rusak Malam - Dimakan Sendiri
     porsi_dikonsumsi GENERATED ALWAYS AS (
         ( (porsi_carry_over - porsi_basi_pagi) + porsi_baru_dimasak )
-        - porsi_sisa_layak_jual - porsi_rusak_malam
+        - porsi_sisa_layak_jual - porsi_rusak_malam - porsi_dimakan_sendiri
     ) STORED,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT chk_stok_non_negative CHECK (
-        porsi_sisa_layak_jual + porsi_rusak_malam
+        porsi_sisa_layak_jual + porsi_rusak_malam + porsi_dimakan_sendiri
         <= (porsi_carry_over - porsi_basi_pagi) + porsi_baru_dimasak
     )
 );
@@ -325,7 +379,7 @@ CREATE INDEX idx_rekonsiliasi_tanggal ON rekonsiliasi_harian(tanggal);
 ### 6.1 Prinsip Desain Utama
 
 - **Mobile-first, satu tangan:** Semua elemen interaktif utama berada dalam jangkauan ibu jari (thumb zone) karena kemungkinan digunakan sambil berdiri/bergegas.
-- **Tombol grid besar, minim mengetik:** Gunakan stepper (`−` / angka / `+`) dan grid kartu per lauk dengan foto, bukan form panjang bergaya tabel. Input angka manual hanya untuk nominal uang (total laci, total modal).
+- **Tombol grid besar, minim mengetik:** Gunakan stepper (`−` / angka / `+`) dan grid kartu per lauk dengan foto, bukan form panjang bergaya tabel. Input angka manual hanya untuk nominal uang (total laci, total modal), yang memakai **directive format Rupiah otomatis** (`v-currency`) — menampilkan pemisah ribuan sambil menyimpan nilai numerik murni.
 - **Zero-training onboarding:** Alur pagi dan malam harus bisa dipahami tanpa penjelasan tertulis — gunakan ikon besar, warna, dan label kata kerja langsung ("Masih Layak Jual", "Catat Rugi").
 - **Warna kontras sebagai indikator status:**
   - Hijau → aman/normal (stok sesuai, selisih kas dalam toleransi).

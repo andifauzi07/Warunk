@@ -30,6 +30,14 @@ export interface RankingRow {
   porsi_rusak_total: number;
 }
 
+export interface RiwayatPendapatanRow {
+  tanggal: string;
+  status: StatusHarian;
+  total_pendapatan_estimasi: number;
+  total_porsi_dikonsumsi: number;
+  keuntungan_bersih: number;
+}
+
 export async function fetchRingkasanHarian(tanggal: string): Promise<RingkasanHarianRow | null> {
   const { data, error } = await supabase
     .from('ringkasan_harian')
@@ -49,6 +57,21 @@ export async function fetchRekonsiliasiRange(dari: string, sampai: string): Prom
     .order('tanggal', { ascending: true });
   if (error) throw error;
   return data as TrendRow[];
+}
+
+export async function fetchRiwayatPendapatan(
+  dari: string,
+  sampai: string,
+): Promise<RiwayatPendapatanRow[]> {
+  const { data, error } = await supabase
+    .from('ringkasan_harian')
+    .select('tanggal, status, total_pendapatan_estimasi, total_porsi_dikonsumsi, keuntungan_bersih')
+    .eq('status', 'malam_selesai')
+    .gte('tanggal', dari)
+    .lte('tanggal', sampai)
+    .order('tanggal', { ascending: false });
+  if (error) throw error;
+  return data as RiwayatPendapatanRow[];
 }
 
 export async function fetchRankingLauk(dari: string, sampai: string): Promise<RankingRow[]> {

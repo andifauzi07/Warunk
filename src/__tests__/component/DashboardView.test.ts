@@ -7,6 +7,7 @@ import {
   fetchRingkasanHarian,
   fetchRekonsiliasiRange,
   fetchRankingLauk,
+  fetchRiwayatPendapatan,
 } from '../..//lib/services/analitik';
 import { fetchPengaturan } from '../..//lib/services/pengaturan';
 import { tambahHari } from '../..//lib/format';
@@ -25,6 +26,7 @@ vi.mock('@/lib/services/analitik', () => ({
   fetchRingkasanHarian: vi.fn(),
   fetchRekonsiliasiRange: vi.fn(),
   fetchRankingLauk: vi.fn(),
+  fetchRiwayatPendapatan: vi.fn(),
 }));
 
 function todayString() {
@@ -67,6 +69,22 @@ async function mountView(): Promise<VueWrapper> {
   vi.mocked(fetchRankingLauk).mockResolvedValue([
     { lauk_id: 'a', nama_lauk: 'Ayam', porsi_dikonsumsi: 8, porsi_rusak_total: 0 },
     { lauk_id: 'b', nama_lauk: 'Telur', porsi_dikonsumsi: 5, porsi_rusak_total: 2 },
+  ]);
+  vi.mocked(fetchRiwayatPendapatan).mockResolvedValue([
+    {
+      tanggal: hariIni,
+      status: 'malam_selesai',
+      total_pendapatan_estimasi: 1300000,
+      total_porsi_dikonsumsi: 142,
+      keuntungan_bersih: 480000,
+    },
+    {
+      tanggal: tambahHari(hariIni, -1),
+      status: 'malam_selesai',
+      total_pendapatan_estimasi: 980000,
+      total_porsi_dikonsumsi: 118,
+      keuntungan_bersih: 210000,
+    },
   ]);
 
   const wrapper = mount(DashboardView, {
@@ -152,5 +170,14 @@ describe('DashboardView', () => {
     expect(t).toContain('Sering basi/rusak');
     expect(t).toContain('Telur');
     expect(t).toContain('2 porsi');
+  });
+
+  it('menampilkan card Riwayat pendapatan dengan baris', async () => {
+    vi.mocked(fetchRingkasanHarian).mockResolvedValue(ringkasan as never);
+    const wrapper = await mountView();
+    const t = wrapper.text();
+    expect(t).toContain('Riwayat pendapatan');
+    expect(t).toContain('Rp 1.300.000');
+    expect(t).toContain('142 porsi');
   });
 });
